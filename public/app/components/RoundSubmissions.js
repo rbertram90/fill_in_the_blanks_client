@@ -12,31 +12,44 @@ RoundSubmissions.prototype = Object.create(Component.prototype);
 RoundSubmissions.prototype.constructor = RoundSubmissions;
 
 RoundSubmissions.prototype.roundStart = function(message) {
-    this.wrapper.innerHTML = "<p class='not-active-message'>Awaiting player submissions</p>";
-
-    // document.querySelector(".judging_inner").innerHTML = "";
-    // document.querySelector("#judging_outer > h2").innerHTML = "";
+    this.wrapper.innerHTML = "<p class='not-active-message'>" + t("Awaiting player submissions") + "</p>";
 };
 
 RoundSubmissions.prototype.connectedGameStatus = function (message) {
     if (message.game_status == 0) {
         // Awaiting game start
-        this.wrapper.innerHTML = '<p class="not-active-message">Awaiting game start</p>';
+        this.wrapper.innerHTML = "<p class='not-active-message'>" + t("Awaiting game start") + "</p>";
     }
     else {
         // Awaiting next round to start
-        this.wrapper.innerHTML = '<p class="not-active-message">Awaiting next round to start</p>';
+        this.wrapper.innerHTML = '<p class="not-active-message">' + t('Awaiting next round to start') + '</p>';
     }
 };
 
 RoundSubmissions.prototype.roundJudge = function (message) {
     var output = "";
-    var heading = "Player submissions";
     var originalQuestionText = document.querySelector('#question_outer .question').innerHTML; // should really store this somewhere!
 
-    for (var c = 0; c < message.allCards.length; c++) {
+    // Randomise submission ordering
+    var randomisedCards = new Array(message.allCards.length);
+
+    // Create an array of available indexes (0..n)
+    var indexes = [];
+    for (var i = 0; i < message.allCards.length; i++) indexes.push(i);
+
+    // Copy cards from first array into random array in random order
+    while (message.allCards.length > 0) {
+        var random = Math.floor(Math.random() * Math.floor(indexes.length));
+        var randomIndex = indexes[random];
+        indexes.splice(randomIndex, 1);
+
+        var card = message.allCards.pop();
+        randomisedCards[randomIndex] = card;
+    }
+
+    for (var c = 0; c < randomisedCards.length; c++) {
         // Build up a new string, replacing blanks in question with card text
-        var playerCards = message.allCards[c];
+        var playerCards = randomisedCards[c];
         var cardIndex = 0;
         var questionText = originalQuestionText;
 
@@ -45,12 +58,12 @@ RoundSubmissions.prototype.roundJudge = function (message) {
             cardIndex++;
         }
 
-        // just use the ID of first card as winner
-        output += "<p class='card' id='played_card" + message.allCards[c][0].id + "' data-id='" + message.allCards[c][0].id + "'>" + questionText + "</p>";
+        // use the ID of first card as we only need it for identifying who has won the round
+        output += "<p class='card' id='played_card" + playerCards[0].id + "' data-id='" + playerCards[0].id + "'>" + questionText + "</p>";
     }
 
     if (message.currentJudge.username == this.game.usernameField.value) {
-        output += '<button id="pick_winner">Confirm selection</button>';
+        output += '<button id="pick_winner">' + t('Confirm selection') + '</button>';
     }
     
     this.wrapper.innerHTML = output;
@@ -63,12 +76,8 @@ RoundSubmissions.prototype.roundJudge = function (message) {
         this.game.userIsPicking = true;
         this.pickWinnerButton = document.querySelector('#pick_winner');
         this.pickWinnerButton.addEventListener('click', this.pickWinner);
-        heading = "Pick a winner"
-        this.game.components.messagePanel.showMessage("It's your turn to choose the winning card");
+        this.game.components.messagePanel.showMessage(t("It\'s your turn to choose the winning card"));
     }
-
-    // document.querySelector("#judging_outer > h2").innerHTML = heading;
-    // document.querySelector("#judging_outer").style.display = "block";
 };
 
 /**
@@ -107,7 +116,7 @@ RoundSubmissions.prototype.pickWinner = function (event) {
     var winningCard = document.querySelector("#judging_outer .card.active");
 
     if (!winningCard) {
-        showServerMessage('Please select a card', 'error');
+        game.components.messagePanel.showMessage(t('Please select a card'), 'error');
         return;
     }
 
@@ -115,9 +124,8 @@ RoundSubmissions.prototype.pickWinner = function (event) {
     userIsPicking = false;
 
     game.socket.send('{ "action": "winner_picked", "card": ' + winningCard.dataset.id + ' }');
-
 };
 
 RoundSubmissions.prototype.serverDisconnected = function(message) {
-    this.wrapper.innerHTML = '<p class="not-active-message">Awaiting connection to server</p>';
+    this.wrapper.innerHTML = '<p class="not-active-message">' + t('Awaiting connection to server') + '</p>';
 };

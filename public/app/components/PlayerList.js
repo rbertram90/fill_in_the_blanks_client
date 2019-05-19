@@ -24,11 +24,16 @@ PlayerList.prototype.roundWinner = PlayerList.prototype.triggerRedraw;
 PlayerList.prototype.gameReset = PlayerList.prototype.triggerRedraw;
 
 PlayerList.prototype.serverDisconnected = function(message) {
-    this.wrapper.innerHTML = '<p class="not-active-message">Awaiting connection to server</p>';
+    this.wrapper.innerHTML = '<p class="not-active-message">' + t("Awaiting connection to server") + '</p>';
 };
 
 PlayerList.prototype.redraw = function() {
-    var output = "<table cellpadding='5' cellspacing='1' width='100%'><tr><th></th><th>Username</th><th>Score</th><th>Status</th><th>Czar</th></tr>";
+    var output = "<table cellpadding='5' cellspacing='1' width='100%'><tr><th></th><th>"
+        + t("Username") + "</th><th>"
+        + t("Score") + "</th><th>"
+        + t("Status") + "</th><th>"
+        + t("Czar") + "</th></tr>";
+        
     for (var p = 0; p < this.players.length; p++) {
         var player = this.players[p];
         if (!player.isActive) continue;
@@ -44,7 +49,7 @@ PlayerList.prototype.redraw = function() {
         output += '<td>' + (player.isGameHost ? 'H' : '') + '</td>';
         output += '<td>' + player.username + '</td>';
         output += '<td>' + player.score + '</td>';
-        output += '<td>' + player.status + '</td>';
+        output += '<td>' + t(player.status) + '</td>';
         output += '<td>' + (player.username == this.game.currentJudge ? 'X' : '')  + '</td></tr>';
     }
     this.wrapper.innerHTML = output + "</table>";

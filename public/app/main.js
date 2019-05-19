@@ -41,8 +41,6 @@ BlanksGame.prototype.handleMessage = function(e) {
     var data = JSON.parse(e.data);
     var game = window.BlanksGameInstance;
 
-    // console.log('got message: ' + data.type);
-
     switch (data.type) {
         case 'player_connected':
             // Check if the player that connected is local player
@@ -61,21 +59,10 @@ BlanksGame.prototype.handleMessage = function(e) {
             }
             break;
 
-        // case 'player_disconnected':
-        // case 'connected_game_status':
         case 'round_start':
             var currentJudge = data.currentJudge.username;
             this.currentJudge = currentJudge;
             break;
-
-        // case 'start_game_fail':
-
-        // case 'answer_card_update':
-        //     showAnswerCards(data.cards);
-        //     break;
-
-        // case 'player_submitted':
-        // case 'round_judge':
 
         case 'round_winner':
             document.getElementById('played_card' + data.card).className = 'card winner';

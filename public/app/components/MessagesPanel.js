@@ -7,36 +7,42 @@ function MessagesPanel(game) {
     this.messageIndex = 0;
     this.wrapper = document.getElementById('server_messages');
 
-    this.showMessage('Welcome to Fill in the Blanks!');
-    this.showMessage('To start playing, enter the host details, pick your player name, and click <strong>Connect</strong>.');
+    this.showMessage(t('Welcome to Fill in the Blanks!'));
+    this.showMessage(t('To start playing, enter the host details, pick your player name, and click <strong>Connect</strong>.'));
 };
 
 MessagesPanel.prototype = Object.create(Component.prototype);
 MessagesPanel.prototype.constructor = MessagesPanel;
 
 MessagesPanel.prototype.playerConnected = function(message) {
-    this.showMessage('<strong>' + message.playerName + '</strong> connected');
+    var connectedText = t('<strong>[username]</strong> connected');
+    connectedText = connectedText.replace('[username]', message.playerName);
+    this.showMessage(connectedText);
 };
 
 MessagesPanel.prototype.playerDisconnected = function(message) {
-    this.showMessage('<strong>' + message.playerName + '</strong> disconnected');
+    var connectedText = t('<strong>[username]</strong> disconnected');
+    connectedText = connectedText.replace('[username]', message.playerName);
+    this.showMessage(connectedText);
 };
 
 MessagesPanel.prototype.roundStart = function(message) {
-    this.showMessage("Round started - <strong>" + message.currentJudge.username + "</strong> is the card czar.");
+    var roundStartText = t("Round started - <strong>[username]</strong> is the card czar.");
+    roundStartText = roundStartText.replace('[username]', message.currentJudge.username);
+    this.showMessage(roundStartText, 'success');
 
     var currentJudge = message.currentJudge.username;
 
     if (currentJudge !== this.game.usernameField.value) {
-        this.showMessage("Choose your card(s)");
+        this.showMessage(t("Choose your card(s)"));
     }
     else {
-        this.showMessage("Waiting for other players to choose card(s)");
+        this.showMessage(t("Waiting for other players to choose card(s)"));
     }
 };
 
 MessagesPanel.prototype.answerCardUpdate = function(message) {
-    this.showMessage('Cards receieved');
+    this.showMessage(t('Cards receieved'));
 };
 
 /**
@@ -47,25 +53,25 @@ MessagesPanel.prototype.answerCardUpdate = function(message) {
  */
 MessagesPanel.prototype.startGameFail = function(message) {
     if (this.game.clientIsGameHost) {
-        this.showMessage('Failed to start game - ' + message.message, 'error');
+        this.showMessage(t('Failed to start game') + ' - ' + t(message.message), 'error');
         this.game.startGameButton.disabled = false;
     }
 };
 
 MessagesPanel.prototype.playerSubmitted = function (message) {
-    this.showMessage('<strong>' + message.playerName + '</strong> played their card(s)');
+    this.showMessage('<strong>' + message.playerName + '</strong> '+ t('played their card(s)'));
 };
 
 MessagesPanel.prototype.roundJudge = function (message) {
-    this.showMessage('All players have played their card(s)');
+    this.showMessage(t('All players have played their card(s)'));
 };
 
 MessagesPanel.prototype.roundWinner = function (message) {
-    this.showMessage('Round winner is <strong>' + message.winner.username + '</strong>', 'success');
+    this.showMessage(t('Round winner is') + ': <strong>' + message.winner.username + '</strong>', 'success');
 };
 
 MessagesPanel.prototype.gameReset = function (message) {
-    this.showMessage('Game has been reset', 'success');
+    this.showMessage(t('Game has been reset'), 'success');
 };
 
 /**
@@ -84,7 +90,7 @@ MessagesPanel.prototype.showMessage = function(text, type='info') {
     var message = document.createElement('p');
     message.id = 'message' + this.messageIndex;
     message.className = 'message ' + type;
-    message.setAttribute('title', 'Added at ' + time);
+    message.setAttribute('title', t('Added at ') + time);
     message.setAttribute('data-added-at', time);
     message.innerHTML = text;
 

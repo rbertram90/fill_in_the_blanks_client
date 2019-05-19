@@ -1,5 +1,17 @@
+<?php
+    include __DIR__ .'/../Translate.php';
+
+    if (isset($_GET['lang'])) {
+        $_SESSION['user_lang'] = $_GET['lang'];
+    }
+    $lang = isset($_SESSION['user_lang']) ? $_SESSION['user_lang'] : 'en';
+
+    if (file_exists(__DIR__ .'/../lang/'. $lang .'.php')) {
+        Translate::$language = $lang;
+    }
+?>
 <!DOCTYPE html>
-<html lang="en">
+<html lang="<?php print $lang ?>">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -17,29 +29,29 @@
 
         <form id="connect_form">
             <div class="field">
-                <label for="host">Host</label>
+                <label for="host"><?php Translate::t('Host') ?></label>
                 <input type="text" value="localhost" id="connect_host" required>
             </div>
             <div class="field">
-                <label for="host">Port</label>
+                <label for="host"><?php Translate::t('Port') ?></label>
                 <input type="text" value="8080" id="connect_port" required size="4">
             </div>
             <div class="field">
-                <label for="username">Username</label>
+                <label for="username"><?php Translate::t('Username') ?></label>
                 <input type="text" id="username" value="player1" required>
                 <script>document.getElementById('username').value = 'player'+Date.now().toString().substr(-4)</script>
             </div>
             <div class="actions">
-                <button id="connect_button" type="button">Connect</button>
+                <button id="connect_button" type="button"><?php Translate::t('Connect') ?></button>
             </div>
         </form>
 
-        <div id="client_status" class="disconnected">Not connected</div>
+        <div id="client_status" class="disconnected"><?php Translate::t('Not connected') ?></div>
     </header>
 
     <main>
         <div id="host_controls" style="display: none;">
-            <h2>Host controls</h2>
+            <h2><?php Translate::t('Host controls') ?></h2>
             <div id="host_control_inner">
                 <!--
                 <label for="winning_score">Winning score</label>
@@ -58,41 +70,49 @@
                 </select>
                 -->
 
-                <button id="start_game" type="button">Start game</button>
-
-                <button id="next_round" type="button" disabled>Trigger next round</button>
-                <button id="reset_game" type="button">Reset game</button>
+                <button id="start_game" type="button"><?php Translate::t('Start game') ?></button>
+                <button id="next_round" type="button" disabled><?php Translate::t('Trigger next round') ?></button>
+                <button id="reset_game" type="button"><?php Translate::t('Reset game') ?></button>
             </div>
         </div>
 
-        <h2>Current round</h2>
+        <h2><?php Translate::t('Current round') ?></h2>
         <div id="question_outer">
-            <p class="not-active-message">Awaiting connection to server</p>
+            <p class="not-active-message"><?php Translate::t('Awaiting connection to server') ?></p>
         </div>
 
-        <h2>Played cards</h2>
+        <h2><?php Translate::t('Played cards') ?></h2>
         <div id="judging_outer">
-            <p class="not-active-message">Awaiting connection to server</p>
+            <p class="not-active-message"><?php Translate::t('Awaiting connection to server') ?></p>
             <div class="judging_inner"></div>
         </div>
 
-        <h2>Your deck</h2>
-        <button id="play_cards" type="button" disabled>Play card(s)</button>
+        <h2><?php Translate::t('Your deck') ?></h2>
+        <button id="play_cards" type="button" disabled><?php Translate::t('Play card(s)') ?></button>
         <div id="answers_outer">
-            <p class="not-active-message">Awaiting connection to server</p>
+            <p class="not-active-message"><?php Translate::t('Awaiting connection to server') ?></p>
         </div>
     </main>
 
     <aside>
-        <h2>Game Messages</h2>
+        <h2><?php Translate::t('Game messages') ?></h2>
         <div id="server_messages"></div>
 
-        <h2>Players</h2>
+        <h2><?php Translate::t('Players') ?></h2>
         <div id="user_list">
-            <p class="not-active-message">Awaiting connection to server</p>
+            <p class="not-active-message"><?php Translate::t('Awaiting connection to server') ?></p>
         </div>
     </aside>
 
+    <script>
+    <?php if ($lang == 'en'): ?>
+        var translations = {};
+    <?php else: ?>
+        var translations = <?php print json_encode(Translate::getTranslations()); ?>;
+    <?php endif; ?>
+    </script>
+
+    <script src="/app/translate.js"></script>
     <script src="/app/Component.js"></script>
     <script src="/app/components/MessagesPanel.js"></script>
     <script src="/app/components/PlayerList.js"></script>

@@ -24,22 +24,22 @@ PlayerDeck.prototype.roundStart = function(message) {
 };
 
 PlayerDeck.prototype.gameReset = function(message) {
-    this.wrapper.innerHTML = "<p class='not-active-message'>Awaiting game start</p>";
+    this.wrapper.innerHTML = "<p class='not-active-message'>" + t("Awaiting game start") + "</p>";
     this.playCardsButton.disabled = true;
 };
 
 PlayerDeck.prototype.serverDisconnected = function(message) {
-    this.wrapper.innerHTML = '<p class="not-active-message">Awaiting connection to server</p>';
+    this.wrapper.innerHTML = '<p class="not-active-message">' + t("Awaiting connection to server") + '</p>';
 };
 
 PlayerDeck.prototype.connectedGameStatus = function(message) {
     if (message.game_status == 0) {
         // Awaiting game start
-        this.wrapper.innerHTML = '<p class="not-active-message">Awaiting game start</p>';
+        this.wrapper.innerHTML = "<p class='not-active-message'>" + t("Awaiting game start") + "</p>";
     }
     else {
         // Awaiting next round to start
-        this.wrapper.innerHTML = '<p class="not-active-message">Awaiting next round to start</p>';
+        this.wrapper.innerHTML = '<p class="not-active-message">' + t('Awaiting next round to start') + '</p>';
     }
 };
 
@@ -97,6 +97,6 @@ PlayerDeck.prototype.submitCards = function (event) {
         game.cardsSelectable = false;
     }
     else {
-        game.components.messagePanel.showMessage('Please select the correct number of cards', 'error');
+        game.components.messagePanel.showMessage(t('Please select the correct number of cards'), 'error');
     }
 };

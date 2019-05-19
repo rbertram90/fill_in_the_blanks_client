@@ -28,6 +28,13 @@ function BlanksGame() {
     this.usernameField = document.getElementById('username');
     this.hostField = document.getElementById('connect_host');
     this.portField = document.getElementById('connect_port');
+
+    if (lastConnection = window.localStorage.getItem('last_server_connection')) {
+        lastConnection = JSON.parse(lastConnection);
+        this.usernameField.value = lastConnection.username;
+        this.hostField.value = lastConnection.host;
+        this.portField.value = lastConnection.port;
+    }
 }
 
 BlanksGame.prototype.handleMessage = function(e) {
@@ -126,6 +133,7 @@ BlanksGame.prototype.createServerConnection = function () {
 
     var host = game.hostField.value;
     var port = game.portField.value;
+    var username = game.usernameField.value;
 
     game.socket = new WebSocket('ws://' + host + ':' + port);
 
@@ -134,6 +142,8 @@ BlanksGame.prototype.createServerConnection = function () {
         game.statusWrapper.innerHTML = "Connected";
         game.statusWrapper.className = "connected";
         game.socket.send('{ "action": "player_connected", "username": "' + game.usernameField.value + '" }');
+
+        window.localStorage.setItem('last_server_connection', JSON.stringify({host: host, port: port, username: username }));
     };
 
     game.socket.onmessage = game.handleMessage;

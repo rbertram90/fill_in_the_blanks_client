@@ -41,8 +41,7 @@ RoundSubmissions.prototype.roundJudge = function (message) {
     while (message.allCards.length > 0) {
         var random = Math.floor(Math.random() * Math.floor(indexes.length));
         var randomIndex = indexes[random];
-        indexes.splice(randomIndex, 1);
-
+        indexes.splice(random, 1);
         var card = message.allCards.pop();
         randomisedCards[randomIndex] = card;
     }

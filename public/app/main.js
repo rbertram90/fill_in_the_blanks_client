@@ -2,79 +2,394 @@
  * Class BlanksGame
  */
 function BlanksGame() {
+
+    this.components = {};
+
     // Create and initialise all page components
-    this.components = {
+    /*
         messagePanel: new MessagesPanel(this),
         playerList: new PlayerList(this),
         roundQuestion: new RoundQuestion(this),
         roundSubmissions: new RoundSubmissions(this),
         playerDeck: new PlayerDeck(this)
-    };
+    };*/
+
+    // Create outer wrapper
+    this.parentElement = document.createElement('div');
+    this.parentElement.id = 'blanks_game';
+    document.body.appendChild(this.parentElement);
 
     this.socket = null;
 
-    this.clientIsGameHost = false;
-    this.userIsPicking = false;
+    // Game variables
+    this.player = null;
     this.playerList = [];
-    this.currentJudge = "";
-    this.cardsSelectable = false;
-    this.cards = null;
+    this.currentJudge = null;
+    this.clientIsGameHost = false;
 
-    this.statusWrapper = document.getElementById('client_status');
+    this.currentQuestion = {};
 
-    this.connectButton = document.getElementById("connect_button");
-    this.connectButton.addEventListener('click', this.openConnection);
+    // Initialise connection form
+    this.connectForm = this.loadConnectForm();
+}
 
-    this.usernameField = document.getElementById('username');
-    this.hostField = document.getElementById('connect_host');
-    this.portField = document.getElementById('connect_port');
+/**
+ * Create the connect to server form
+ */
+BlanksGame.prototype.loadConnectForm = function() {
 
+    var username, host, port;
+
+    // Get last values
     if (lastConnection = window.localStorage.getItem('last_server_connection')) {
         lastConnection = JSON.parse(lastConnection);
-        this.usernameField.value = lastConnection.username;
-        this.hostField.value = lastConnection.host;
-        this.portField.value = lastConnection.port;
+        host = lastConnection.host;
+        port = lastConnection.port;
+        username = lastConnection.username;
     }
-}
+    else {
+        host = 'localhost';
+        port = 8080;
+        username = 'player' + Date.now().toString().substr(-4);
+    }
+
+    // Form
+    var connectForm = document.createElement('form');
+    connectForm.id = 'connect_form';
+
+    // Heading
+    var title = document.createElement('h2');
+    title.innerText = t('Connect to game server');
+    connectForm.appendChild(title);
+
+    // Placeholder for errors
+    var errorWrapper = document.createElement('div');
+    errorWrapper.className = 'errors';
+    connectForm.appendChild(errorWrapper);
+
+    // Host
+    var hostWrapper = document.createElement('div');
+    hostWrapper.className = 'field';
+    hostWrapper.id = 'field_host';
+    connectForm.appendChild(hostWrapper);
+
+    var hostLabel = document.createElement('label');
+    hostLabel.setAttribute('for', 'host');
+    hostLabel.innerText = t('Host');
+    hostWrapper.appendChild(hostLabel);
+
+    var hostField = document.createElement('input');
+    hostField.id = 'connect_host';
+    hostField.type = 'text';
+    hostField.value = host;
+    hostField.setAttribute('required', 'required');
+    hostWrapper.appendChild(hostField);
+
+    // Port
+    var portWrapper = document.createElement('div');
+    portWrapper.className = 'field';
+    portWrapper.id = 'field_port';
+    connectForm.appendChild(portWrapper);
+
+    var portLabel = document.createElement('label');
+    portLabel.setAttribute('for', 'port');
+    portLabel.innerText = t('Port');
+    portWrapper.appendChild(portLabel);
+
+    var portField = document.createElement('input');
+    portField.id = 'connect_port';
+    portField.type = 'text';
+    portField.value = port;
+    portField.setAttribute('required', 'required');
+    portField.setAttribute('size', '4');
+    portWrapper.appendChild(portField);
+
+    // Username
+    var usernameWrapper = document.createElement('div');
+    usernameWrapper.className = 'field';
+    usernameWrapper.id = 'field_username';
+    connectForm.appendChild(usernameWrapper);
+
+    var usernameLabel = document.createElement('label');
+    usernameLabel.setAttribute('for', 'username');
+    usernameLabel.innerText = t('Username');
+    usernameWrapper.appendChild(usernameLabel);
+
+    var usernameField = document.createElement('input');
+    usernameField.id = 'username';
+    usernameField.type = 'text';
+    usernameField.value = username;
+    usernameField.setAttribute('required', 'required');
+    usernameWrapper.appendChild(usernameField);
+
+    // Actions
+    var actionsWrapper = document.createElement('div');
+    actionsWrapper.className = 'actions';
+    connectForm.appendChild(actionsWrapper);
+
+    var submitButton = document.createElement('button');
+    submitButton.id = 'connect_button';
+    submitButton.type = 'button';
+    submitButton.innerText = t('Connect');
+    actionsWrapper.appendChild(submitButton);
+
+    submitButton.addEventListener('click', this.openConnection);
+
+    this.parentElement.appendChild(connectForm);
+
+    return {
+        form: connectForm,
+        errors: errorWrapper,
+        host: hostField,
+        port: portField,
+        username: usernameField,
+        submitButton: submitButton
+    };
+};
+
+BlanksGame.prototype.loadConfigForm = function() {
+    // Wrapper
+    var wrapper = document.createElement('div');
+    wrapper.id = 'game_config_form';
+
+    var optionsWrapper = document.createElement('div');
+    optionsWrapper.id = 'game_options';
+
+    // Heading
+    var heading = document.createElement('h2');
+    heading.innerText = t('Configure game');
+    optionsWrapper.appendChild(heading);
+
+    // What's the winning score?
+    var winScoreWrapper = document.createElement('div');
+    var winScoreLabel = document.createElement('label');
+    winScoreLabel.innerText = t('Winning score');
+    winScoreLabel.setAttribute('for', 'winning_score');
+    var winScoreSelect = document.createElement('select');
+    winScoreSelect.id = 'winning_score';
+    for (var i = 3; i < 11; i++) {
+        var option = document.createElement('option');
+        option.innerText = i;
+        option.value = i;
+        winScoreSelect.appendChild(option);
+    }
+    winScoreWrapper.appendChild(winScoreLabel);
+    winScoreWrapper.appendChild(winScoreSelect);
+    optionsWrapper.appendChild(winScoreWrapper);
+
+    // Finish button
+    var submitButton = document.createElement('button');
+    submitButton.setAttribute('type', 'button');
+    submitButton.innerText = t('Start game');
+    optionsWrapper.appendChild(submitButton);
+    submitButton.addEventListener('click', this.startGame);
+
+    wrapper.appendChild(optionsWrapper);
+
+    // Connected users display
+    var connectedUsers = document.createElement('div');
+    connectedUsers.id = 'connected_users';
+
+    this.components.playerList = new PlayerList(this, connectedUsers);
+    this.components.playerList.redraw();
+
+    wrapper.appendChild(connectedUsers);
+
+    this.parentElement.appendChild(wrapper);
+};
+
+BlanksGame.prototype.loadAwaitGameStart = function() {
+    var wrapper = document.createElement('div');
+    wrapper.id = 'awaiting_game_start';
+
+    var heading = document.createElement('h2');
+    heading.innerText = t('Waiting for host to start the game...');
+    wrapper.appendChild(heading);
+
+    var image = document.createElement('img');
+    image.src = '/images/waiting.gif';
+    image.alt = t('Humorous animation of a person waiting');
+    wrapper.appendChild(image);
+
+    this.parentElement.appendChild(wrapper);
+};
+
+BlanksGame.prototype.loadGameScreen = function(data) {
+
+    var wrapper = document.createElement('div');
+    wrapper.id = 'game_window';
+
+    var heading = document.createElement('h2');
+    heading.innerText = t('Choose your card(s)');
+    wrapper.appendChild(heading);
+
+    var blackCard = document.createElement('div');
+    blackCard.id = 'question_card';
+    blackCard.innerText = data.questionCard.text;
+    wrapper.appendChild(blackCard);
+
+    // Players cards
+    var playerCardsWrapper = document.createElement('div');
+    playerCardsWrapper.id = 'player_hand';
+
+    this.components.playerDeck = new PlayerDeck(this, playerCardsWrapper);
+    this.components.playerDeck.redraw();
+
+    var submitCardsButton = document.createElement('button');
+    submitCardsButton.innerText = t('Play card(s)');
+    submitCardsButton.addEventListener('click', this.components.playerDeck.submitCards);
+    this.components.playerDeck.submitButton = submitCardsButton;
+
+    playerCardsWrapper.appendChild(submitCardsButton);
+
+    wrapper.appendChild(playerCardsWrapper);
+
+    this.parentElement.appendChild(wrapper);
+};
+
+BlanksGame.prototype.loadJudgeWaitingScreen = function(data) {
+    var wrapper = document.createElement('div');
+    wrapper.id = 'czar_wait_window';
+
+    var heading = document.createElement('h2');
+    heading.innerText = t('You\'re the card czar - wait for players to submit answer');
+    wrapper.appendChild(heading);
+
+    var blackCardWrapper = document.createElement('div');
+    blackCardWrapper.id = 'question_card';
+    blackCardWrapper.innerText = data.questionCard.text;
+    wrapper.appendChild(blackCardWrapper);
+
+    // Connected users display
+    var connectedUsers = document.createElement('div');
+    connectedUsers.id = 'connected_users';
+
+    this.components.playerList = new PlayerList(this, connectedUsers);
+    this.components.playerList.redraw();
+    
+    wrapper.appendChild(connectedUsers);
+    this.parentElement.appendChild(wrapper);
+};
+
+BlanksGame.prototype.loadJudgeScreen = function(data, playerIsJudge) {
+    // allCards
+    // currentJudge
+
+    // Connected users display
+    var resultsWrapper = document.createElement('div');
+    resultsWrapper.id = 'player_submissions';
+
+    this.components.roundSubmissions = new RoundSubmissions(this, resultsWrapper);
+    this.components.roundSubmissions.redraw(data, playerIsJudge);
+    
+    this.parentElement.appendChild(resultsWrapper);
+};
 
 BlanksGame.prototype.handleMessage = function(e) {
     var data = JSON.parse(e.data);
     var game = window.BlanksGameInstance;
 
     switch (data.type) {
+        case 'connected_game_status':
+            var username = game.connectForm.username.value;
+
+            // Remove connect form from DOM
+            game.connectForm.form.parentElement.removeChild(game.connectForm.form);
+
+            game.connectForm = null;
+
+            // Create player
+            game.player = new Player(game, username);
+
+            switch (data.game_status) {
+                // Awaiting game start
+                case 0:
+                    if (data.judge == null || data.judge.username == username) {
+                        // Show configure game options screen
+                        game.loadConfigForm();
+                    }
+                    else {
+                        // Show awaiting game start screen
+                        game.loadAwaitGameStart();
+                    }
+                    break;
+                // Round in progress
+                case 1:
+                    // @todo
+                    break;
+
+                // Round Judging
+                case 2:
+                    break;
+            }
+            break;
+
         case 'player_connected':
             // Check if the player that connected is local player
             // If they are game host then enable buttons
             if (data.host) {
                 game.clientIsGameHost = true;
-
-                game.startGameButton = document.getElementById("start_game");
-                game.startGameButton.addEventListener('click', game.startGame);
-
-                game.nextRoundButton = document.getElementById("next_round");
-                game.nextRoundButton.addEventListener('click', game.startNextRound);
-                
-                game.resetGameButton = document.getElementById('reset_game');
-                game.resetGameButton.addEventListener('click', game.resetGame);
             }
             break;
 
+        case 'answer_card_update':
+            game.player.cards = data.cards;
+            break;
+
         case 'round_start':
-            var currentJudge = data.currentJudge.username;
-            this.currentJudge = currentJudge;
+            game.parentElement.innerHTML = '';
+            game.currentJudge = data.currentJudge.username;
+            game.currentQuestion = data.questionCard;
+            game.currentQuestion.blanks = (game.currentQuestion.text.match(/____/g) || []).length;
+
+            if (game.currentJudge == game.player.username) {
+                game.loadJudgeWaitingScreen(data);
+            }
+            else {
+                game.loadGameScreen(data);
+            }
+            break;
+
+        case 'round_judge':
+            game.parentElement.innerHTML = '';
+            game.loadJudgeScreen(data, (game.currentJudge == game.player.username));
             break;
 
         case 'round_winner':
             document.getElementById('played_card' + data.card).className = 'card winner';
+
             if (game.clientIsGameHost) {
-                game.nextRoundButton.disabled = false;
+                window.setTimeout(game.startNextRound, 10000);
             }
+
+            var nextRoundWarning = document.createElement('div');
+            nextRoundWarning.innerText = 'Next round starting in 10 seconds';
+            game.parentElement.appendChild(nextRoundWarning);
+            
+            var timeToNextRound = 10;
+
+            var refreshNextRound = function() {
+                timeToNextRound--;
+                nextRoundWarning.innerText = t('Next round starting in ' + timeToNextRound + ' seconds');
+
+                if (timeToNextRound > 0) {
+                    window.setTimeout(refreshNextRound, 1000);
+                }
+            };
+            window.setTimeout(refreshNextRound, 1000);
+
             break;
 
         case 'game_reset':
+            /*
             if (game.clientIsGameHost) {
                 game.startGameButton.disabled = false;
             }
+            */
+            break;
+
+        case 'duplicate_username':
+            game.connectForm.errors.innerHTML = '<p class="error">' + t('Username already in use') + '</p>';
             break;
     }
 
@@ -95,14 +410,17 @@ BlanksGame.prototype.updateComponents = function(message) {
  */
 BlanksGame.prototype.openConnection = function(event) {
     var game = window.BlanksGameInstance;
+    var form = game.connectForm;
 
-    if (game.usernameField.value.length == 0) {
+    // Validate form
+    if (form.username.value.length == 0) {
+        form.errors.innerHTML = '<p class="error">' + t('Please enter a username') + '</p>';
         return;
     }
-    game.usernameField.disabled = true;
-    game.connectButton.disabled = true;
-    game.hostField.disabled = true;
-    game.portField.disabled = true;
+    form.username.disabled = true;
+    form.submitButton.disabled = true;
+    form.host.disabled = true;
+    form.port.disabled = true;
 
     game.createServerConnection();
 
@@ -116,37 +434,47 @@ BlanksGame.prototype.openConnection = function(event) {
  */
 BlanksGame.prototype.createServerConnection = function () {
     var game = window.BlanksGameInstance;
-    game.components.messagePanel.showMessage("Connecting to server...");
-
-    var host = game.hostField.value;
-    var port = game.portField.value;
-    var username = game.usernameField.value;
+    var form = game.connectForm;
+    form.errors.innerHTML = '<p class="info loader"><img src="/images/ajax-loader.gif">' + t('Connecting to server') + '</p>';
+    var host = form.host.value;
+    var port = form.port.value;
+    var username = form.username.value;
 
     game.socket = new WebSocket('ws://' + host + ':' + port);
 
     game.socket.onopen = function(e) {
-        game.components.messagePanel.showMessage("Connected to <strong>" + host + "</strong> on port <strong>" + port + "</strong>!", 'success');
-        game.statusWrapper.innerHTML = "Connected";
-        game.statusWrapper.className = "connected";
-        game.socket.send('{ "action": "player_connected", "username": "' + game.usernameField.value + '" }');
+        // Show either waiting for game to start or game options
 
-        window.localStorage.setItem('last_server_connection', JSON.stringify({host: host, port: port, username: username }));
+        game.socket.send('{ "action": "player_connected", "username": "' + username + '" }');
+
+        window.localStorage.setItem('last_server_connection', JSON.stringify({
+            host: host,
+            port: port,
+            username: username
+        }));
     };
 
     game.socket.onmessage = game.handleMessage;
 
     game.socket.onclose = function(e) {
-        game.components.messagePanel.showMessage('Connection to server failed', 'error');
-        game.usernameField.disabled = false;
-        game.connectButton.disabled = false;
-        game.hostField.disabled = false;
-        game.portField.disabled = false;
-        game.statusWrapper.innerHTML = "Not connected";
-        game.statusWrapper.className = "disconnected";
-
-        game.updateComponents({
-            type: 'server_disconnected'
-        });
+        var form = window.BlanksGameInstance.connectForm;
+        
+        if (form) {
+            form.errors.innerHTML = '<p class="error">' + t('Connection to server failed') + "</p>";
+            form.username.disabled = false;
+            form.submitButton.disabled = false;
+            form.host.disabled = false;
+            form.port.disabled = false;
+        }
+        else {
+            // Lazy way to reset everything...
+            // Ideally would show an error message saying connection lost
+            window.location.reload();
+        }
+        
+        // game.updateComponents({
+        //    type: 'server_disconnected'
+        // });
     };
 };
 
@@ -158,7 +486,7 @@ BlanksGame.prototype.startGame = function(event) {
     if (!game.clientIsGameHost) return;
 
     game.socket.send('{ "action": "start_game" }');
-    game.startGameButton.disabled = true;
+    // game.startGameButton.disabled = true;
     event.preventDefault();
 };
 

@@ -1,36 +1,27 @@
 /**
  * Round submissions component
  */
-function RoundSubmissions(game) {
+function RoundSubmissions(game, parentElement) {
     Component.call(this, game);
 
-    this.wrapper = document.getElementById('judging_outer');
+    this.parentElement = parentElement;
     this.pickWinnerButton = null;
 };
 
 RoundSubmissions.prototype = Object.create(Component.prototype);
 RoundSubmissions.prototype.constructor = RoundSubmissions;
 
-RoundSubmissions.prototype.roundStart = function(message) {
-    this.wrapper.innerHTML = "<p class='not-active-message'>" + t("Awaiting player submissions") + "</p>";
-};
-
-RoundSubmissions.prototype.connectedGameStatus = function (message) {
-    if (message.game_status == 0) {
-        // Awaiting game start
-        this.wrapper.innerHTML = "<p class='not-active-message'>" + t("Awaiting game start") + "</p>";
-    }
-    else {
-        // Awaiting next round to start
-        this.wrapper.innerHTML = '<p class="not-active-message">' + t('Awaiting next round to start') + '</p>';
-    }
-};
-
-RoundSubmissions.prototype.roundJudge = function (message) {
+RoundSubmissions.prototype.redraw = function (message, playerIsJudge) {
     var output = "";
-    var originalQuestionText = document.querySelector('#question_outer .question').innerHTML; // should really store this somewhere!
 
-    // Randomise submission ordering
+    if (playerIsJudge) {
+        output += '<h2>Choose a winner</h2>';
+        output += '<div id="pick_errors"></div>';
+    }
+    var originalQuestionText = this.game.currentQuestion.text;
+
+    // Randomise submission ordering - should this have been done server
+    // side so that everyone sees the same random order!
     var randomisedCards = new Array(message.allCards.length);
 
     // Create an array of available indexes (0..n)
@@ -60,22 +51,23 @@ RoundSubmissions.prototype.roundJudge = function (message) {
         // use the ID of first card as we only need it for identifying who has won the round
         output += "<p class='card' id='played_card" + playerCards[0].id + "' data-id='" + playerCards[0].id + "'>" + questionText + "</p>";
     }
-
-    if (message.currentJudge.username == this.game.usernameField.value) {
-        output += '<button id="pick_winner">' + t('Confirm selection') + '</button>';
-    }
     
-    this.wrapper.innerHTML = output;
+    this.parentElement.innerHTML = output;
 
-    if (message.currentJudge.username == this.game.usernameField.value) {
-        var cards = document.querySelectorAll("#judging_outer .card");
+    if (playerIsJudge) {
+        var cards = this.parentElement.children;
         for (var c = 0; c < cards.length; c++) {
-            cards[c].addEventListener('click', this.highlightWinner);
+            if (cards[c].className == 'card') {
+                cards[c].addEventListener('click', this.highlightWinner);
+            }
         }
-        this.game.userIsPicking = true;
-        this.pickWinnerButton = document.querySelector('#pick_winner');
-        this.pickWinnerButton.addEventListener('click', this.pickWinner);
-        this.game.components.messagePanel.showMessage(t("It\'s your turn to choose the winning card"));
+
+        var pickWinnerButton = document.createElement('button');
+        pickWinnerButton.id = 'pick_winner';
+        pickWinnerButton.innerText = t('Confirm selection');
+        pickWinnerButton.addEventListener('click', this.pickWinner);
+        this.parentElement.appendChild(pickWinnerButton);
+        this.pickWinnerButton = pickWinnerButton;
     }
 };
 
@@ -85,21 +77,19 @@ RoundSubmissions.prototype.roundJudge = function (message) {
  * @param {event} event
  */
 RoundSubmissions.prototype.highlightWinner = function (event) {
-    var game = window.BlanksGameInstance;
-
-    if (game.userIsPicking) {
-        var allCards = document.querySelectorAll("#judging_outer .card");
-        for (i = 0; i < allCards.length; ++i) {
+    var allCards = this.parentElement.children;
+    for (i = 0; i < allCards.length; i++) {
+        if (allCards[i].className == 'card active') {
             allCards[i].className = "card";
         }
+    }
 
-        // Toggle active class
-        if (this.className.indexOf('active') > -1) {
-            this.className = "card";
-        }
-        else {
-            this.className = "card active";
-        }
+    // Toggle active class
+    if (this.className.indexOf('active') > -1) {
+        this.className = "card";
+    }
+    else {
+        this.className = "card active";
     }
 };
 
@@ -112,19 +102,15 @@ RoundSubmissions.prototype.highlightWinner = function (event) {
 RoundSubmissions.prototype.pickWinner = function (event) {
     var game = window.BlanksGameInstance;
     var roundSubmissions = game.components.roundSubmissions;
-    var winningCard = document.querySelector("#judging_outer .card.active");
+    var winningCard = document.querySelector('#' + roundSubmissions.parentElement.id + " .card.active");
 
     if (!winningCard) {
-        game.components.messagePanel.showMessage(t('Please select a card'), 'error');
+        document.getElementById('pick_errors').innerHTML = '<p>Please select the winning card</p>';
+        // game.components.messagePanel.showMessage(t('Please select a card'), 'error');
         return;
     }
 
     roundSubmissions.pickWinnerButton.disabled = true;
-    userIsPicking = false;
 
     game.socket.send('{ "action": "winner_picked", "card": ' + winningCard.dataset.id + ' }');
-};
-
-RoundSubmissions.prototype.serverDisconnected = function(message) {
-    this.wrapper.innerHTML = '<p class="not-active-message">' + t('Awaiting connection to server') + '</p>';
 };

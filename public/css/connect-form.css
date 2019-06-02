@@ -1,0 +1,70 @@
+#connect_form h2, #connect_form .errors {
+    margin-left: 10%;
+    margin-right: 10%;
+}
+#connect_form .errors p {
+    padding: 10px;
+    border-radius: 5px;
+    color: white;
+}
+#connect_form .errors p.error {
+    background-color: rgb(224, 44, 44);
+}
+#connect_form .errors p.info {
+    background-color: #21007F;
+}
+#connect_form .errors p.loader img {
+    margin-right: 10px;
+}
+#connect_form label {
+    font-weight: bold;
+    display: block;
+    margin-bottom: 8px;
+}
+#connect_form input[type=text] {
+    border: 1px solid #ccc;
+    padding: 10px 15px;
+    margin-bottom: 20px;
+    box-sizing: border-box;
+    font-size: 18px;
+    font-family: 'Source Sans Pro', Arial, sans-serif;
+    width: 100%;
+}
+#connect_form #field_host {
+    width: 60%;
+    margin-left: 10%;
+    margin-right: 5%;
+    display: inline-block;
+}
+/* #connect_form */
+#connect_form #field_port {
+    width: 15%;
+    margin-right: 10%;
+    display: inline-block;
+}
+#connect_form #field_username {
+    margin-left: 10%;
+    margin-right: 10%;
+    width: 80%;
+}
+#connect_form .actions {
+    margin-left: 10%;
+    margin-right: 10%;
+    text-align: center;
+}
+#connect_form button {
+    background-color: #21007F;
+    transition: background-color .4s;
+    color: white;
+    padding: 15px 0;
+    width: 300px;
+    font-size: 18px;
+    margin-top: 20px;
+}
+#connect_form button:hover {
+    background-color: #479654;
+}
+#connect_form button:disabled {
+    background-color: #888;
+    cursor: not-allowed;
+}

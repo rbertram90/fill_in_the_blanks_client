@@ -1,77 +1,60 @@
 /**
  * Round submissions component
  */
-function PlayerDeck(game) {
+function PlayerDeck(game, parentElement) {
     Component.call(this, game);
 
     this.cardsSelectable = false;
-    this.wrapper = document.getElementById('answers_outer');
-    this.playCardsButton = document.getElementById("play_cards");
-    this.playCardsButton.addEventListener('click', this.submitCards);
+    this.parentElement = parentElement;
+    this.errorWrapper = null;
+    this.submitButton = null;
 };
 
 PlayerDeck.prototype = Object.create(Component.prototype);
 PlayerDeck.prototype.constructor = PlayerDeck;
 
-PlayerDeck.prototype.roundStart = function(message) {
-    // Enable / disable play cards button
-    if (message.playerInPlay != undefined && message.playerInPlay == 0) {
-        return;
-    }
+PlayerDeck.prototype.redraw = function() {
+    var player = this.game.player;
 
-    this.playCardsButton.disabled = (message.currentJudge.username === this.game.usernameField.value);
-    this.game.cardsSelectable = (message.currentJudge.username !== this.game.usernameField.value);
-};
+    var errorWrapper = document.createElement('div');
+    this.errorWrapper = errorWrapper;
+    this.parentElement.appendChild(errorWrapper);
 
-PlayerDeck.prototype.gameReset = function(message) {
-    this.wrapper.innerHTML = "<p class='not-active-message'>" + t("Awaiting game start") + "</p>";
-    this.playCardsButton.disabled = true;
-};
+    var form = document.createElement('form');
+    form.id = 'player_card_submissions';
+    this.parentElement.appendChild(form);
 
-PlayerDeck.prototype.serverDisconnected = function(message) {
-    this.wrapper.innerHTML = '<p class="not-active-message">' + t("Awaiting connection to server") + '</p>';
-};
+    for (var c = 0; c < player.cards.length; c++) {
+        var cardElement = document.createElement('p');
+        cardElement.dataset.id = player.cards[c].id;
+        cardElement.setAttribute('contenteditable', true);
+        cardElement.innerHTML = player.cards[c].text;
+        cardElement.className = 'card';
+        // cardElement.addEventListener('click', this.selectCard);
+        form.appendChild(cardElement);
 
-PlayerDeck.prototype.connectedGameStatus = function(message) {
-    if (message.game_status == 0) {
-        // Awaiting game start
-        this.wrapper.innerHTML = "<p class='not-active-message'>" + t("Awaiting game start") + "</p>";
-    }
-    else {
-        // Awaiting next round to start
-        this.wrapper.innerHTML = '<p class="not-active-message">' + t('Awaiting next round to start') + '</p>';
-    }
-};
-
-PlayerDeck.prototype.answerCardUpdate = function(message) {
-    var output = "";
-    for (var c = 0; c < message.cards.length; c++) {
-        output += "<p class='card' data-id='" + message.cards[c].id + "' contenteditable='true'>" + message.cards[c].text + "</p>";
-    }
-    this.wrapper.innerHTML = output;
-
-    cards = document.querySelectorAll("#answers_outer .card");
-    for (var c = 0; c < cards.length; c++) {
-        cards[c].addEventListener('click', this.selectCard);
+        for (var i = 0; i < this.game.currentQuestion.blanks; i++) {
+            var radioButton = document.createElement('input');
+            radioButton.type = 'radio';
+            radioButton.name = 'card_' + i;
+            radioButton.value = player.cards[c].id;
+            form.appendChild(radioButton);
+        }
     }
 };
 
 /**
- * Click handler for selecting white card(s) to play
+ * Helper function for showing an error with submission
  * 
- * @param {event} event 
+ * @param {string} text
  */
-PlayerDeck.prototype.selectCard = function (event) {
-    // console.log(window.BlanksGameInstance.cardsSelectable);
-    if (window.BlanksGameInstance.cardsSelectable) {
-        // Toggle active class
-        if (this.className.indexOf('active') > -1) {
-            this.className = "card";
-        }
-        else {
-            this.className = "card active";
-        }
-    }
+PlayerDeck.prototype.showError = function(text) {
+    this.errorWrapper.innerHTML = '';
+    var error = document.createElement('p');
+    error.className = 'error';
+    error.innerHTML = text;
+    this.errorWrapper.appendChild(error);
+    this.submitButton.disabled = false;
 };
 
 /**
@@ -81,22 +64,53 @@ PlayerDeck.prototype.selectCard = function (event) {
  */
 PlayerDeck.prototype.submitCards = function (event) {
     var game = window.BlanksGameInstance;
-    var deck = game.components.playerDeck;
-    var activeCards = document.querySelectorAll('#answers_outer .card.active');
-    var cardsRequired = (document.querySelector('#question_outer .question').innerHTML.match(/____/g) || []).length;
+    var form = document.forms.namedItem("player_card_submissions");
+    var thisComponent = game.components.playerDeck;
 
-    if (activeCards.length == cardsRequired) {
-        var cards = [];
-        for (var c = 0; c < activeCards.length; c++) {
-            var card = activeCards[c];
-            cards.push({ id: card.dataset.id, text: card.innerHTML });
-            card.parentNode.removeChild(card);
+    thisComponent.submitButton.disabled = true;
+
+    var answers = [];
+    var answerIndexes = [];
+
+    for (var i = 0; i < game.currentQuestion.blanks; i++) {
+        var card = form.elements['card_' + i]; // RadioNodeList
+
+        // Check that the user has not selected the same card twice!
+        if (answerIndexes.indexOf(card.value) > -1) {
+            thisComponent.showError(t('Please select ' + game.currentQuestion.blanks + ' different cards.'));
+            return;
         }
-        game.socket.send('{ "action": "cards_submit", "cards": ' + JSON.stringify(cards) + ' }');
-        deck.playCardsButton.disabled = true;
-        game.cardsSelectable = false;
+        else {
+            answerIndexes.push(card.value);
+        }
+        
+        // Extract card data
+        if (card) {
+            var cardText = '';
+            for (var j = 0; j < form.children.length; j++) {
+                var child = form.children[j];
+                if (child.tagName == 'P' && child.dataset.id == card.value) {
+                    cardText = child.innerHTML;
+                }
+            }
+            
+            if (cardText.length == 0) {
+                thisComponent.showError(t('Please ensure selected cards have text entered'));
+                return false;
+            }
+
+            answers.push({
+                id: card.value,
+                text: cardText
+            });
+        }
+        else {
+            thisComponent.showError(t('Please select the correct number of cards'));
+            return false;
+        }
     }
-    else {
-        game.components.messagePanel.showMessage(t('Please select the correct number of cards'), 'error');
-    }
+
+    game.socket.send('{ "action": "cards_submit", "cards": ' + JSON.stringify(answers) + ' }');
+
+    this.parentElement.innerHTML = 'Waiting for other players...';
 };

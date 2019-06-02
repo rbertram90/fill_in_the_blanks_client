@@ -1,17 +1,11 @@
+@import url("/css/connect-form.css");
+
 html { height: 100%; }
 
 body {
-    background-color: #444;
-    min-height: 100%;
+    background-color: #FFF;
+    background-image: linear-gradient(#FFF 30%, #21007F);
     font-family: 'Source Sans Pro', Arial, sans-serif;
-    margin: 0;
-    display: grid;
-    grid-template-areas:
-      "header header"
-      "main sidebar";
-    grid-template-columns: 10fr 6fr;
-    grid-template-rows: 80px auto;
-    align-content: stretch;
 }
 
 body > header {
@@ -27,108 +21,44 @@ body > header {
         width: 180px;
         padding: 10px 20px;
     }
-    body > header #connect_form {
-        display: flex;
-        padding-top: 10px;
-    }
-    body > header #connect_form .field {
-        margin-right: 20px;
-    }
-    body > header #connect_form .actions {
-        padding-top: 20px;
-    }
-    body > header #connect_form label {
-        color: white;
-        display: block;
-        margin-bottom: 5px;
-        font-size: 0.8em;
-    }
-    body > header #connect_form input[type=text] {
-        font-family: 'Source Sans Pro', Arial, sans-serif;
-        border: 0;
-        padding: 5px 8px;
-        border-radius: 2px;
-    }
-    body > header #connect_form input[type=text]:disabled {
-        cursor: not-allowed;
-    }
-    body > header #connect_form button {
-        background-color: #1f7f2e;
-        border: 0;
-        color: white;
-        padding: 6px 10px;
-        cursor: pointer;
-        transition: background-color .3s;
-        border-radius: 2px;
-    }
-    body > header #connect_form button:hover {
-        background-color: #479654;
-    }
-    body > header #connect_form button:disabled {
-        background-color: grey;
-        cursor: not-allowed;
-    }
 
-body > main {
-    grid-area: main;
-    padding: 20px 10px 20px 20px;
+#blanks_game {
+    background-color: #fff;
+    padding-top: 150px;
+    border-radius: 10px;
+    background-image: url(/images/logo.png);
+    background-repeat: no-repeat;
+    background-size: 300px;
+    background-position: center 20px;
+    padding-bottom: 40px;
 }
-body > aside {
-    grid-area: sidebar;
-    padding: 20px 20px 20px 10px;
-}
-    body > aside h2,
-    body > main h2 {
-        color: #eee;
-        background-color: #302570;
-        margin: 0 0 .5em 0;
-        font-size: 20px;
-        padding: 10px 12px 8px 12px;
-        margin: 0;
-        text-transform: uppercase;
-        font-size: 14px;
-        border-top-right-radius: 5px;
-        border-top-left-radius: 5px;
-        border-bottom: 1px solid #111;
-        font-weight: normal;
-        box-shadow: 3px 3px 5px #222;
+@media (max-width: 380px) {
+    #blanks_game {
+        background-size: calc(100% - 20px);
     }
+}
 
-#server_messages {
-    height: 40vh;
-    overflow: auto;
-    padding: 10px;
-    background-color: #2f3133;
-    border-bottom-right-radius: 5px;
-    border-bottom-left-radius: 5px;
+#game_config_form {
+    display: flex;
+}
+#game_options {
+    width: 100%;
+}
+#game_options label {
+    font-weight: bold;
+    display: block;
+    margin-bottom: 8px;
+}
+#game_options select {
     margin-bottom: 20px;
-    box-shadow: 3px 3px 5px #222;
 }
-    #server_messages p {
-        background-color: #f6f6f6;
-        border-radius: 3px;
-        margin-top: 0;
-        margin-bottom: 10px;
-        padding: 10px 20px 10px 64px;
-        font-size: 14px;
-    }
-    #server_messages p:before {
-        content: attr(data-added-at);
-        background-color: #111;
-        color: #fff;
-        padding: 10px;
-        margin: -10px 10px -10px -64px;
-        border-top-left-radius: 3px;
-        border-bottom-left-radius: 3px;
-        display: inline-block;
-        width: 34px;
-    }
-    #server_messages p.error {
-        background-color: rgba(255, 0, 0, 0.5);
-    }
-    #server_messages p.success {
-        background-color: rgba(0, 255, 0, 0.5);
-    }
+#connected_users {
+    width: 100%;
+}
+
+*:first-child {
+    margin-top: 0;
+}
 
 #user_list {
     margin-bottom: 20px;
@@ -213,7 +143,8 @@ body > aside {
 }
 
 button {
-    background-color: #f6f6f6;
+    background-color: #21007F;
+    color: #fff;
     border-radius: 3px;
     padding: 8px 14px;
     display: inline-block;
@@ -221,21 +152,9 @@ button {
     cursor: pointer;
 }
 button:hover {
-    background-color: #e0e0e0;
+    background-color: rgb(57, 9, 187);
 }
 button:disabled {
     background-color: #e0e0e0;
-}
-
-#host_control_inner,
-#question_outer,
-#judging_outer,
-#answers_outer {
-    overflow: auto;
-    padding: 10px;
-    background-color: #2f3133;
-    border-bottom-right-radius: 5px;
-    border-bottom-left-radius: 5px;
-    margin-bottom: 20px;
-    box-shadow: 3px 3px 5px #222;
+    color: #888;
 }

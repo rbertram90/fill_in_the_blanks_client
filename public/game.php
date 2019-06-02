@@ -9,8 +9,8 @@
     if (file_exists(__DIR__ .'/../lang/'. $lang .'.php')) {
         Translate::$language = $lang;
     }
-?>
-<!DOCTYPE html>
+    
+?><!DOCTYPE html>
 <html lang="<?php print $lang ?>">
 <head>
     <meta charset="UTF-8">
@@ -24,86 +24,6 @@
     <!-- https://www.dafont.com/karmatic-arcade.font -->
 </head>
 <body>
-    <header>
-        <img src="/images/logo.png" class="logo" alt="Fill in the Blanks">
-
-        <form id="connect_form">
-            <div class="field">
-                <label for="host"><?php Translate::t('Host') ?></label>
-                <input type="text" value="localhost" id="connect_host" required>
-            </div>
-            <div class="field">
-                <label for="host"><?php Translate::t('Port') ?></label>
-                <input type="text" value="8080" id="connect_port" required size="4">
-            </div>
-            <div class="field">
-                <label for="username"><?php Translate::t('Username') ?></label>
-                <input type="text" id="username" value="player1" required>
-                <script>document.getElementById('username').value = 'player'+Date.now().toString().substr(-4)</script>
-            </div>
-            <div class="actions">
-                <button id="connect_button" type="button"><?php Translate::t('Connect') ?></button>
-            </div>
-        </form>
-
-        <div id="client_status" class="disconnected"><?php Translate::t('Not connected') ?></div>
-    </header>
-
-    <main>
-        <div id="host_controls" style="display: none;">
-            <h2><?php Translate::t('Host controls') ?></h2>
-            <div id="host_control_inner">
-                <!--
-                <label for="winning_score">Winning score</label>
-                <select id="winning_score">
-                    <option>1</option>
-                    <option>2</option>
-                    <option>3</option>
-                    <option>4</option>
-                    <option>4</option>
-                    <option selected>5</option>
-                    <option>6</option>
-                    <option>7</option>
-                    <option>8</option>
-                    <option>9</option>
-                    <option>10</option>
-                </select>
-                -->
-
-                <button id="start_game" type="button"><?php Translate::t('Start game') ?></button>
-                <button id="next_round" type="button" disabled><?php Translate::t('Trigger next round') ?></button>
-                <button id="reset_game" type="button"><?php Translate::t('Reset game') ?></button>
-            </div>
-        </div>
-
-        <h2><?php Translate::t('Current round') ?></h2>
-        <div id="question_outer">
-            <p class="not-active-message"><?php Translate::t('Awaiting connection to server') ?></p>
-        </div>
-
-        <h2><?php Translate::t('Played cards') ?></h2>
-        <div id="judging_outer">
-            <p class="not-active-message"><?php Translate::t('Awaiting connection to server') ?></p>
-            <div class="judging_inner"></div>
-        </div>
-
-        <h2><?php Translate::t('Your deck') ?></h2>
-        <button id="play_cards" type="button" disabled><?php Translate::t('Play card(s)') ?></button>
-        <div id="answers_outer">
-            <p class="not-active-message"><?php Translate::t('Awaiting connection to server') ?></p>
-        </div>
-    </main>
-
-    <aside>
-        <h2><?php Translate::t('Game messages') ?></h2>
-        <div id="server_messages"></div>
-
-        <h2><?php Translate::t('Players') ?></h2>
-        <div id="user_list">
-            <p class="not-active-message"><?php Translate::t('Awaiting connection to server') ?></p>
-        </div>
-    </aside>
-
     <script>
     <?php if ($lang == 'en'): ?>
         var translations = {};
@@ -113,6 +33,7 @@
     </script>
 
     <script src="/app/translate.js"></script>
+    <script src="/app/Player.js"></script>
     <script src="/app/Component.js"></script>
     <script src="/app/components/MessagesPanel.js"></script>
     <script src="/app/components/PlayerList.js"></script>

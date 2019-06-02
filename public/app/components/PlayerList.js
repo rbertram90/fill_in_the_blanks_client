@@ -1,10 +1,10 @@
 /**
  * Messages panel
  */
-function PlayerList(game) {
+function PlayerList(game, parentElement) {
     Component.call(this, game);
 
-    this.wrapper = document.getElementById('user_list');
+    this.parentElement = parentElement;
     this.players = [];
 };
 
@@ -24,33 +24,31 @@ PlayerList.prototype.roundWinner = PlayerList.prototype.triggerRedraw;
 PlayerList.prototype.gameReset = PlayerList.prototype.triggerRedraw;
 
 PlayerList.prototype.serverDisconnected = function(message) {
-    this.wrapper.innerHTML = '<p class="not-active-message">' + t("Awaiting connection to server") + '</p>';
+    this.parentElement.innerHTML = '<p class="not-active-message">' + t("Awaiting connection to server") + '</p>';
 };
 
 PlayerList.prototype.redraw = function() {
-    var output = "<table cellpadding='5' cellspacing='1' width='100%'><tr><th></th><th>"
+    var output = "<h2>Players</h2><table cellpadding='5' cellspacing='1' width='100%'><tr><th></th><th>"
         + t("Username") + "</th><th>"
         + t("Score") + "</th><th>"
-        + t("Status") + "</th><th>"
-        + t("Czar") + "</th></tr>";
+        + t("Status") + "</th></tr>";
         
     for (var p = 0; p < this.players.length; p++) {
         var player = this.players[p];
         if (!player.isActive) continue;
 
         // todo - make this more secure!
-        if (player.isGameHost && player.username == document.getElementById('username').value) {
-            clientIsGameHost = true;
+        // if (player.isGameHost && player.username == this.game.player.username) {
+        //    clientIsGameHost = true;
             // why is this being done here??!
-            document.getElementById("host_controls").style.display = 'block';
-        }
+        //    document.getElementById("host_controls").style.display = 'block';
+        // }
 
         output += '<tr data-player-name="' + player.username + '">';
         output += '<td>' + (player.isGameHost ? 'H' : '') + '</td>';
         output += '<td>' + player.username + '</td>';
         output += '<td>' + player.score + '</td>';
-        output += '<td>' + t(player.status) + '</td>';
-        output += '<td>' + (player.username == this.game.currentJudge ? 'X' : '')  + '</td></tr>';
+        output += '<td>' + t(player.status) + '</td></tr>';
     }
-    this.wrapper.innerHTML = output + "</table>";
+    this.parentElement.innerHTML = output + "</table>";
 };

@@ -225,7 +225,7 @@ BlanksGame.prototype.loadGameScreen = function(data) {
 
     var blackCard = document.createElement('div');
     blackCard.id = 'question_card';
-    blackCard.innerText = data.questionCard.text;
+    blackCard.innerHTML = data.questionCard.text;
     wrapper.appendChild(blackCard);
 
     // Players cards
@@ -257,7 +257,7 @@ BlanksGame.prototype.loadJudgeWaitingScreen = function(data) {
 
     var blackCardWrapper = document.createElement('div');
     blackCardWrapper.id = 'question_card';
-    blackCardWrapper.innerText = data.questionCard.text;
+    blackCardWrapper.innerHTML = data.questionCard.text;
     wrapper.appendChild(blackCardWrapper);
 
     // Connected users display
@@ -361,6 +361,16 @@ BlanksGame.prototype.handleMessage = function(e) {
             if (game.clientIsGameHost) {
                 window.setTimeout(game.startNextRound, 10000);
             }
+
+            var winnerHeading = document.createElement('h3');
+            winnerHeading.innerText = data.winner.username + t(' is the round winner');
+            game.parentElement.appendChild(winnerHeading);
+
+            var connectedUsers = document.createElement('div');
+            connectedUsers.id = 'connected_users';
+            game.components.playerList = new PlayerList(this, connectedUsers);
+            // game.components.playerList.redraw(); // this will happen when components refreshed
+            game.parentElement.appendChild(connectedUsers);
 
             var nextRoundWarning = document.createElement('div');
             nextRoundWarning.innerText = 'Next round starting in 10 seconds';

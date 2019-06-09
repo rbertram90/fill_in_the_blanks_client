@@ -1,3 +1,8 @@
+#connect_form {
+    max-width: 800px;
+    margin: 0 auto;
+}
+
 #connect_form h2, #connect_form .errors {
     margin-left: 10%;
     margin-right: 10%;
@@ -36,7 +41,6 @@
     margin-right: 5%;
     display: inline-block;
 }
-/* #connect_form */
 #connect_form #field_port {
     width: 15%;
     margin-right: 10%;
@@ -67,4 +71,20 @@
 #connect_form button:disabled {
     background-color: #888;
     cursor: not-allowed;
+}
+
+@media (max-width: 380px) {
+    #connect_form #field_host {
+        width: 80%;
+        margin-right: 10%;
+        display: block;
+    }
+    #connect_form #field_port {
+        width: 80%;
+        margin-left: 10%;
+        display: block;
+    }
+    #connect_form button {
+        width: 100%;
+    }
 }

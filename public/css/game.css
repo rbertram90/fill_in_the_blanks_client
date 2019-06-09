@@ -35,6 +35,7 @@ body > header {
 @media (max-width: 380px) {
     #blanks_game {
         background-size: calc(100% - 20px);
+        padding-top: 35vw;
     }
 }
 
@@ -60,70 +61,62 @@ body > header {
     margin-top: 0;
 }
 
-#user_list {
-    margin-bottom: 20px;
+p.error {
     padding: 10px;
-    background-color: #2f3133;
-    border-bottom-right-radius: 5px;
-    border-bottom-left-radius: 5px;
-    box-shadow: 3px 3px 5px #222;
-}
-    #user_list td,
-    #user_list th {
-        background-color: rgba(255, 255, 255, 0.2);
-        color: white;
-        font-family: monospace;
-    }
-
-.not-active-message {
-    background-color: #666;
-    padding: 10px;
-    font-size: 14px;
-    font-style: italic;
-    border-radius: 3px;
-    margin: 0;
+    border-radius: 5px;
+    color: white;
+    background-color: rgb(224, 44, 44);
 }
 
-#client_status {
-    padding: 10px;
-    text-transform: uppercase;
-    color: #fff;
-    margin-left: 20px;
-    border-left: 2px solid #111;
-}
-    #client_status.connected {
-        background-color: #097501;
-    }
-    #client_status.disconnected {
-        background-color: #9b1009;
-    }
-
-.question {
-    background-color: black;
+#question_card {
+    background-color: #222;
     color: white;
     padding: 10px;
     margin: 0;
     border-radius: 3px;
+    margin: 0 20px 20px 20px;
 }
 
-#answers {
-    display: flex;
-    flex-wrap: wrap;
+#player_hand {
+    margin: 0 20px 20px 20px;
+}
+
+#player_card_submissions .form-element {
+    width: 12.5%;
+    display: inline-block;
+    box-sizing: border-box;
+    padding: 10px;
+    text-align: center;
+}
+
+@media (max-width:1600px) { #player_card_submissions .form-element { width: 20%; } }
+@media (max-width:1400px) { #player_card_submissions .form-element { width: 25%; } }
+@media (max-width:960px) { #player_card_submissions .form-element { width: 33.3333%; } }
+@media (max-width:700px) { #player_card_submissions .form-element { width: 50%; } }
+@media (max-width:400px) { #player_card_submissions .form-element { width: 100%; } }
+
+#player_hand button,
+#player_submissions button {
+    padding: 15px 0;
+    width: 300px;
+    font-size: 18px;
+    display: block;
+    margin: 20px auto;
 }
 
 .card {
     background-color: white;
-    width: 150px;
-    height: 150px;
+    height: 200px;
+    width: 100%;
+    box-sizing: border-box;
     padding: 10px;
     display: inline-block;
-    margin: 0 20px 20px 0;
-    cursor: pointer;
     user-select: none;
     vertical-align: top;
     border-radius: 8px;
     border: 5px solid white;
     box-shadow: 2px 2px 5px #555;
+    text-align: left;
 }
     .card.active {
         border: 5px solid blue;
@@ -131,16 +124,6 @@ body > header {
     .card.winner {
         border: 5px solid green;
     }
-
-#host_controls_inner {
-    background-color: #2f3133;
-    border-radius: 5px;
-    padding: 10px;
-    margin-bottom: 10px;
-}
-#host_controls_inner button {
-    margin-right: 10px;
-}
 
 button {
     background-color: #21007F;
@@ -157,4 +140,27 @@ button:hover {
 button:disabled {
     background-color: #e0e0e0;
     color: #888;
+}
+input[type=radio] {
+    width: 20px;
+    height: 20px;
+    cursor: pointer;
+    margin: 0 20px;
+}
+input[type=radio]:before {
+    position: absolute;
+    content: attr(data-cardnum);
+    background-color: rgb(13, 138, 65);
+    color: #fff;
+    width: 20px;
+    height: 20px;
+    border-radius: 10px;
+    text-align: center;
+    line-height: 20px;
+    display: none;
+    font-family: monospace;
+    font-weight: bold;
+}
+input[type=radio]:checked:before {
+    display: block;
 }

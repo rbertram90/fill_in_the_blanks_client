@@ -25,21 +25,27 @@ PlayerDeck.prototype.redraw = function() {
     this.parentElement.appendChild(form);
 
     for (var c = 0; c < player.cards.length; c++) {
+        var cardWrapper = document.createElement('div');
+        cardWrapper.className = 'form-element';
+
         var cardElement = document.createElement('p');
         cardElement.dataset.id = player.cards[c].id;
         cardElement.setAttribute('contenteditable', true);
         cardElement.innerHTML = player.cards[c].text;
         cardElement.className = 'card';
         // cardElement.addEventListener('click', this.selectCard);
-        form.appendChild(cardElement);
+        cardWrapper.appendChild(cardElement);
 
         for (var i = 0; i < this.game.currentQuestion.blanks; i++) {
             var radioButton = document.createElement('input');
             radioButton.type = 'radio';
             radioButton.name = 'card_' + i;
             radioButton.value = player.cards[c].id;
-            form.appendChild(radioButton);
+            radioButton.setAttribute('data-cardnum', i+1);
+            cardWrapper.appendChild(radioButton);
         }
+
+        form.appendChild(cardWrapper);
     }
 };
 
@@ -72,7 +78,7 @@ PlayerDeck.prototype.submitCards = function (event) {
     var answers = [];
     var answerIndexes = [];
 
-    for (var i = 0; i < game.currentQuestion.blanks; i++) {
+    for (var i=0; i < game.currentQuestion.blanks; i++) {
         var card = form.elements['card_' + i]; // RadioNodeList
 
         // Check that the user has not selected the same card twice!
@@ -85,14 +91,8 @@ PlayerDeck.prototype.submitCards = function (event) {
         }
         
         // Extract card data
-        if (card) {
-            var cardText = '';
-            for (var j = 0; j < form.children.length; j++) {
-                var child = form.children[j];
-                if (child.tagName == 'P' && child.dataset.id == card.value) {
-                    cardText = child.innerHTML;
-                }
-            }
+        if (card && card.value) {
+            var cardText = document.querySelector('#' + form.id + ' p[data-id="' + card.value + '"]').innerHTML;
             
             if (cardText.length == 0) {
                 thisComponent.showError(t('Please ensure selected cards have text entered'));
@@ -112,5 +112,12 @@ PlayerDeck.prototype.submitCards = function (event) {
 
     game.socket.send('{ "action": "cards_submit", "cards": ' + JSON.stringify(answers) + ' }');
 
-    this.parentElement.innerHTML = 'Waiting for other players...';
+    var newContent = '<h2>' + t('Waiting for other players...') + '</h2>';
+    game.parentElement.innerHTML = newContent;
+
+    var connectedUsers = document.createElement('div');
+    connectedUsers.id = 'connected_users';
+    game.components.playerList = new PlayerList(this, connectedUsers);
+    game.components.playerList.redraw();    
+    game.parentElement.appendChild(connectedUsers);
 };

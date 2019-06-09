@@ -14,10 +14,28 @@ RoundSubmissions.prototype.constructor = RoundSubmissions;
 RoundSubmissions.prototype.redraw = function (message, playerIsJudge) {
     var output = "";
 
+    var heading = document.createElement('h2');
+    var errorWrapper = null;
+    var subheading = null;
+
     if (playerIsJudge) {
-        output += '<h2>Choose a winner</h2>';
-        output += '<div id="pick_errors"></div>';
+        heading.innerText = t ('Choose a winner');
+        errorWrapper = document.createElement('div');
+        errorWrapper.id = 'pick_errors';
     }
+    else {
+        heading.innerText = t ('Player submissions');
+        subheading = document.createElement('p');
+        subheading.innerText = t('Card czar is picking the winner');
+    }
+
+    this.parentElement.appendChild(heading);
+    if (errorWrapper) this.parentElement.appendChild(errorWrapper);
+    if (subheading) this.parentElement.appendChild(subheading);
+
+    var submissionsWrapper = document.createElement('div');
+    submissionsWrapper.id = 'player_card_submissions';
+
     var originalQuestionText = this.game.currentQuestion.text;
 
     // Randomise submission ordering - should this have been done server
@@ -48,20 +66,27 @@ RoundSubmissions.prototype.redraw = function (message, playerIsJudge) {
             cardIndex++;
         }
 
-        // use the ID of first card as we only need it for identifying who has won the round
-        output += "<p class='card' id='played_card" + playerCards[0].id + "' data-id='" + playerCards[0].id + "'>" + questionText + "</p>";
-    }
-    
-    this.parentElement.innerHTML = output;
+        var formElement = document.createElement('div');
+        formElement.className = 'form-element';
 
-    if (playerIsJudge) {
-        var cards = this.parentElement.children;
-        for (var c = 0; c < cards.length; c++) {
-            if (cards[c].className == 'card') {
-                cards[c].addEventListener('click', this.highlightWinner);
-            }
+        var cardElement = document.createElement('p');
+        cardElement.className = 'card';
+        // use the ID of first card as we only need it for identifying who has won the round
+        cardElement.id = 'played_card' + playerCards[0].id;
+        cardElement.dataset.id = playerCards[0].id;
+        cardElement.innerHTML = questionText;
+
+        if (playerIsJudge) {
+            cardElement.addEventListener('click', this.highlightWinner);
         }
 
+        formElement.appendChild(cardElement);
+        submissionsWrapper.appendChild(formElement);
+    }
+
+    this.parentElement.appendChild(submissionsWrapper);
+
+    if (playerIsJudge) {
         var pickWinnerButton = document.createElement('button');
         pickWinnerButton.id = 'pick_winner';
         pickWinnerButton.innerText = t('Confirm selection');
@@ -77,7 +102,14 @@ RoundSubmissions.prototype.redraw = function (message, playerIsJudge) {
  * @param {event} event
  */
 RoundSubmissions.prototype.highlightWinner = function (event) {
-    var allCards = this.parentElement.children;
+    var game = window.BlanksGameInstance;
+    var roundSubmissions = game.components.roundSubmissions;
+
+    var allCards = document.querySelectorAll('#' + roundSubmissions.parentElement.id + ' .card');
+
+    // console.log('#' + roundSubmissions.parentElement.id + ' .card');
+    // console.log(allCards);
+
     for (i = 0; i < allCards.length; i++) {
         if (allCards[i].className == 'card active') {
             allCards[i].className = "card";
@@ -105,7 +137,7 @@ RoundSubmissions.prototype.pickWinner = function (event) {
     var winningCard = document.querySelector('#' + roundSubmissions.parentElement.id + " .card.active");
 
     if (!winningCard) {
-        document.getElementById('pick_errors').innerHTML = '<p>Please select the winning card</p>';
+        document.getElementById('pick_errors').innerHTML = '<p class="error">' + t('Please select the winning card') + '</p>';
         // game.components.messagePanel.showMessage(t('Please select a card'), 'error');
         return;
     }

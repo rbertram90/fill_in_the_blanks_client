@@ -23,32 +23,31 @@ PlayerList.prototype.playerSubmitted = PlayerList.prototype.triggerRedraw;
 PlayerList.prototype.roundWinner = PlayerList.prototype.triggerRedraw;
 PlayerList.prototype.gameReset = PlayerList.prototype.triggerRedraw;
 
-PlayerList.prototype.serverDisconnected = function(message) {
-    this.parentElement.innerHTML = '<p class="not-active-message">' + t("Awaiting connection to server") + '</p>';
-};
 
 PlayerList.prototype.redraw = function() {
-    var output = "<h2>Players</h2><table cellpadding='5' cellspacing='1' width='100%'><tr><th></th><th>"
-        + t("Username") + "</th><th>"
-        + t("Score") + "</th><th>"
-        + t("Status") + "</th></tr>";
-        
+    var helper = new DOMHelper();
+    this.parentElement.innerHTML = '';
+
+    var heading = helper.element({ tag:'h2', text:t('Players') });
+    this.parentElement.appendChild(heading);
+
     for (var p = 0; p < this.players.length; p++) {
         var player = this.players[p];
         if (!player.isActive) continue;
 
-        // todo - make this more secure!
-        // if (player.isGameHost && player.username == this.game.player.username) {
-        //    clientIsGameHost = true;
-            // why is this being done here??!
-        //    document.getElementById("host_controls").style.display = 'block';
-        // }
+        var playerWrapper = helper.element({ tag:'div', class:'player-card' });
+        
+        var playerIcon = helper.element({ tag:'img', src:'/images/player-icons/' + player.icon + '.png', alt:'Player icon' });
+        playerWrapper.appendChild(playerIcon);
 
-        output += '<tr data-player-name="' + player.username + '">';
-        output += '<td>' + (player.isGameHost ? 'H' : '') + '</td>';
-        output += '<td>' + player.username + '</td>';
-        output += '<td>' + player.score + '</td>';
-        output += '<td>' + t(player.status) + '</td></tr>';
+        if (player.status == 'Card(s) submitted' || player.status == 'Card czar') playerWrapper.className = 'player-card player-ready';
+
+        var playerName = helper.element({ tag:'h4', text:player.username });
+        playerWrapper.appendChild(playerName);
+
+        var playerStatus = helper.element({ tag:'p', text:t(player.status) });
+        playerWrapper.appendChild(playerStatus);
+
+        this.parentElement.appendChild(playerWrapper);
     }
-    this.parentElement.innerHTML = output + "</table>";
 };

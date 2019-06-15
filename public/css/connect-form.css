@@ -88,3 +88,24 @@
         width: 100%;
     }
 }
+
+#connect_form #field_icon {
+    background-color: #f6f6f6;
+    margin-right: 10%;
+    margin-left: 10%;
+    padding: 20px;
+}
+#connect_form #field_icon img {
+    width: 76px;
+    height: 76px;
+    border: 4px solid transparent;
+    border-radius: 50%;
+    cursor: pointer;
+    -webkit-filter: grayscale(100%); /* Safari 6.0 - 9.0 */
+    filter: grayscale(100%);
+}
+#connect_form #field_icon img.selected {
+    border-color: blue;
+    -webkit-filter: grayscale(0%); /* Safari 6.0 - 9.0 */
+    filter: grayscale(0%);
+}

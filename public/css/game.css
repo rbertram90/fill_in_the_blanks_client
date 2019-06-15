@@ -164,3 +164,32 @@ input[type=radio]:before {
 input[type=radio]:checked:before {
     display: block;
 }
+
+.player-card {
+    background-color: #f6f6f6;
+    padding: 20px;
+    min-height: 90px;
+    margin-bottom: 20px;
+    width: 32%;
+    margin-right: 2%;
+    display: inline-block;
+    box-sizing: border-box;
+}
+.player-card:last-child {
+    margin-right: 0;
+}
+.player-card img {
+    float: left;
+    height: 90px;
+    width: 90px;
+    margin-right: 20px;
+}
+.player-card h4 {
+    margin-bottom: 0;
+}
+.player-card p {
+    margin-top: 0;
+}
+.player-card.player-ready {
+    background-color: rgb(106, 190, 106);
+}

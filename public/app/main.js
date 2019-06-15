@@ -38,7 +38,7 @@ function BlanksGame() {
  */
 BlanksGame.prototype.loadConnectForm = function() {
 
-    var username, host, port;
+    var username, host, port, default_icon;
 
     // Get last values
     if (lastConnection = window.localStorage.getItem('last_server_connection')) {
@@ -46,31 +46,36 @@ BlanksGame.prototype.loadConnectForm = function() {
         host = lastConnection.host;
         port = lastConnection.port;
         username = lastConnection.username;
+        default_icon = lastConnection.icon;
     }
     else {
         host = 'localhost';
         port = 8080;
         username = 'player' + Date.now().toString().substr(-4);
     }
+    if (!default_icon) {
+        default_icon = Math.floor(Math.random() * 20) + 1;
+    }
 
     // Form
     var connectForm = document.createElement('form');
     connectForm.id = 'connect_form';
 
+    var helper = new DOMHelper();
+
     // Heading
-    var title = document.createElement('h2');
-    title.innerText = t('Connect to game server');
+    var title = helper.element({
+        tag: 'h2',
+        text: t('Connect to game server')
+    });
     connectForm.appendChild(title);
 
     // Placeholder for errors
-    var errorWrapper = document.createElement('div');
-    errorWrapper.className = 'errors';
+    var errorWrapper = helper.element({ tag:'div', class:'errors' });
     connectForm.appendChild(errorWrapper);
 
     // Host
-    var hostWrapper = document.createElement('div');
-    hostWrapper.className = 'field';
-    hostWrapper.id = 'field_host';
+    var hostWrapper = helper.element({ tag:'div', class:'field', id:'field_host' });
     connectForm.appendChild(hostWrapper);
 
     var hostLabel = document.createElement('label');
@@ -86,9 +91,7 @@ BlanksGame.prototype.loadConnectForm = function() {
     hostWrapper.appendChild(hostField);
 
     // Port
-    var portWrapper = document.createElement('div');
-    portWrapper.className = 'field';
-    portWrapper.id = 'field_port';
+    var portWrapper = helper.element({ tag:'div', class:'field', id:'field_port' });
     connectForm.appendChild(portWrapper);
 
     var portLabel = document.createElement('label');
@@ -105,9 +108,7 @@ BlanksGame.prototype.loadConnectForm = function() {
     portWrapper.appendChild(portField);
 
     // Username
-    var usernameWrapper = document.createElement('div');
-    usernameWrapper.className = 'field';
-    usernameWrapper.id = 'field_username';
+    var usernameWrapper = helper.element({ tag:'div', class:'field', id:'field_username' });
     connectForm.appendChild(usernameWrapper);
 
     var usernameLabel = document.createElement('label');
@@ -121,6 +122,32 @@ BlanksGame.prototype.loadConnectForm = function() {
     usernameField.value = username;
     usernameField.setAttribute('required', 'required');
     usernameWrapper.appendChild(usernameField);
+
+    // Icon
+    var iconWrapper = helper.element({ tag:'div', class:'field', id:'field_icon' });
+    var iconLabel = helper.element({ tag:'label', for:'icon', text:t('Player face') });
+    var iconField = helper.element({ tag:'input', type:'hidden', name:'icon', value:default_icon });
+    iconWrapper.appendChild(iconLabel);
+    iconWrapper.appendChild(iconField);
+
+    for (var i = 1; i <= 20; i++) {
+        var icon = helper.element({ tag: 'img', src: '/images/player-icons/' + i + '.png', class: 'player-icon',
+            alt: 'Player icon ' + i, data: { index:i } });
+        if (i == default_icon) icon.className = 'player-icon selected';
+
+        icon.addEventListener('click', function() {
+            iconField.value = this.dataset.index;
+            var elements = document.querySelectorAll('#field_icon img.player-icon');
+
+            for (var e = 0; e < elements.length; e++) {
+                elements[e].className = 'player-icon';
+            }
+
+            this.className = 'player-icon selected';
+        });
+        iconWrapper.appendChild(icon);
+    }
+    connectForm.appendChild(iconWrapper);
 
     // Actions
     var actionsWrapper = document.createElement('div');
@@ -143,6 +170,7 @@ BlanksGame.prototype.loadConnectForm = function() {
         host: hostField,
         port: portField,
         username: usernameField,
+        icon: iconField,
         submitButton: submitButton
     };
 };
@@ -427,6 +455,15 @@ BlanksGame.prototype.openConnection = function(event) {
         form.errors.innerHTML = '<p class="error">' + t('Please enter a username') + '</p>';
         return;
     }
+    if (form.host.value.length == 0) {
+        form.errors.innerHTML = '<p class="error">' + t('Please enter the hosts IP address') + '</p>';
+        return;
+    }
+    if (form.port.value.length == 0) {
+        form.errors.innerHTML = '<p class="error">' + t('Please enter the hosts port number (8080 by default)') + '</p>';
+        return;
+    }
+
     form.username.disabled = true;
     form.submitButton.disabled = true;
     form.host.disabled = true;
@@ -449,18 +486,20 @@ BlanksGame.prototype.createServerConnection = function () {
     var host = form.host.value;
     var port = form.port.value;
     var username = form.username.value;
+    var icon = form.icon.value;
 
     game.socket = new WebSocket('ws://' + host + ':' + port);
 
     game.socket.onopen = function(e) {
         // Show either waiting for game to start or game options
 
-        game.socket.send('{ "action": "player_connected", "username": "' + username + '" }');
+        game.socket.send('{ "action": "player_connected", "username": "' + username + '", "icon": "' + icon + '" }');
 
         window.localStorage.setItem('last_server_connection', JSON.stringify({
             host: host,
             port: port,
-            username: username
+            username: username,
+            icon: icon
         }));
     };
 

@@ -32,6 +32,7 @@
     <?php endif; ?>
     </script>
 
+    <script src="/app/helpers/DOMHelper.js"></script>
     <script src="/app/translate.js"></script>
     <script src="/app/Player.js"></script>
     <script src="/app/Component.js"></script>

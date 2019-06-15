@@ -28,9 +28,12 @@ function BlanksGame() {
     this.clientIsGameHost = false;
 
     this.currentQuestion = {};
+    this.winningScore = 5; // default
+    this.maxTime = 120000; // default - 2 minutes
 
     // Initialise connection form
     this.connectForm = this.loadConnectForm();
+    this.configForm = null;
 }
 
 /**
@@ -176,6 +179,8 @@ BlanksGame.prototype.loadConnectForm = function() {
 };
 
 BlanksGame.prototype.loadConfigForm = function() {
+    var helper = new DOMHelper();
+
     // Wrapper
     var wrapper = document.createElement('div');
     wrapper.id = 'game_config_form';
@@ -205,6 +210,19 @@ BlanksGame.prototype.loadConfigForm = function() {
     winScoreWrapper.appendChild(winScoreSelect);
     optionsWrapper.appendChild(winScoreWrapper);
 
+    // What's the maximum time each round can last?
+    var maxTimeWrapper = helper.element({ tag:'div' });
+    var maxTimeLabel = helper.element({ tag:'label', text:t('Maximum turn time'), for:'max_time' });
+    var maxTimeSelect = helper.element({ tag:'select', id:'max_time' });
+    var maxTimeOptions = ['Infinite', '0:30', '1:00', '1:30', '2:00', '3:00', '5:00']; // this link to startGame function
+    for (var i = 0; i < maxTimeOptions.length; i++) {
+        var option = helper.element({ tag:'option', text:maxTimeOptions[i], value:i });
+        maxTimeSelect.appendChild(option);
+    }
+    winScoreWrapper.appendChild(maxTimeLabel);
+    winScoreWrapper.appendChild(maxTimeSelect);
+    optionsWrapper.appendChild(maxTimeWrapper);
+
     // Finish button
     var submitButton = document.createElement('button');
     submitButton.setAttribute('type', 'button');
@@ -224,25 +242,44 @@ BlanksGame.prototype.loadConfigForm = function() {
     wrapper.appendChild(connectedUsers);
 
     this.parentElement.appendChild(wrapper);
+
+    return {
+        maxTime: maxTimeSelect,
+        winningScore: winScoreSelect
+    };
 };
 
 BlanksGame.prototype.loadAwaitGameStart = function() {
     var wrapper = document.createElement('div');
     wrapper.id = 'awaiting_game_start';
 
+    var lhs = document.createElement('div');
+    lhs.className = 'waiting_panel';
+
     var heading = document.createElement('h2');
     heading.innerText = t('Waiting for host to start the game...');
-    wrapper.appendChild(heading);
+    lhs.appendChild(heading);
 
     var image = document.createElement('img');
     image.src = '/images/waiting.gif';
     image.alt = t('Humorous animation of a person waiting');
-    wrapper.appendChild(image);
+    lhs.appendChild(image);
+
+    // Connected users display
+    var connectedUsers = document.createElement('div');
+    connectedUsers.id = 'connected_users';
+
+    this.components.playerList = new PlayerList(this, connectedUsers);
+    this.components.playerList.redraw();
+
+    wrapper.appendChild(lhs);
+    wrapper.appendChild(connectedUsers);
 
     this.parentElement.appendChild(wrapper);
 };
 
 BlanksGame.prototype.loadGameScreen = function(data) {
+    var helper = new DOMHelper();
 
     var wrapper = document.createElement('div');
     wrapper.id = 'game_window';
@@ -250,6 +287,34 @@ BlanksGame.prototype.loadGameScreen = function(data) {
     var heading = document.createElement('h2');
     heading.innerText = t('Choose your card(s)');
     wrapper.appendChild(heading);
+
+    // @todo If someone connects half way through a round then the timer on their screen will be wrong...
+    if (data.roundTime > 0) {
+        var nowSeconds = Math.floor(new Date().getTime() / 1000);
+        var roundEnd = nowSeconds + parseInt(data.roundTime / 1000);
+        
+        var timer = helper.element({ tag:'div', class:'round-timer', id:'round_timer', data:{ roundend: roundEnd } });
+        wrapper.appendChild(timer);
+
+        var tickTime = function() {
+            var elem = document.getElementById('round_timer');
+
+            if (!elem) return;
+            var roundEnd = elem.dataset.roundend;
+            
+            var nowSeconds = Math.floor(new Date().getTime() / 1000);
+        
+            var seconds = (roundEnd - nowSeconds);
+            var minutes = Math.floor(seconds / 60);
+            seconds = seconds - (minutes*60);
+            elem.innerText = t('Time remaining: ') + minutes + ':' + ('00' + seconds).slice(-2);
+            
+            if (minutes <= 0 && seconds <= 0) return;
+            setTimeout(tickTime, 1000);
+        };
+
+        setTimeout(tickTime, 1);
+    }
 
     var blackCard = document.createElement('div');
     blackCard.id = 'question_card';
@@ -276,12 +341,44 @@ BlanksGame.prototype.loadGameScreen = function(data) {
 };
 
 BlanksGame.prototype.loadJudgeWaitingScreen = function(data) {
+    var helper = new DOMHelper();
+
     var wrapper = document.createElement('div');
     wrapper.id = 'czar_wait_window';
 
     var heading = document.createElement('h2');
     heading.innerText = t('You\'re the card czar - wait for players to submit answer');
     wrapper.appendChild(heading);
+
+    if (data.roundTime > 0) {
+        var nowSeconds = Math.floor(new Date().getTime() / 1000);
+        var roundEnd = nowSeconds + parseInt(data.roundTime / 1000);
+        
+        var timer = helper.element({ tag:'div', class:'round-timer', id: 'round_timer', data: { roundend: roundEnd } });
+        wrapper.appendChild(timer);
+
+        var tickTime = function() {
+            var elem = document.getElementById('round_timer');
+            if (!elem) return;
+            var roundEnd = elem.dataset.roundend;
+            
+            var nowSeconds = Math.floor(new Date().getTime() / 1000);
+        
+            var seconds = (roundEnd - nowSeconds);
+            var minutes = Math.floor(seconds / 60);
+            seconds = seconds - (minutes*60);
+            elem.innerText = t('Time remaining: ') + minutes + ':' + ('00' + seconds).slice(-2);
+            
+            if (minutes == 0 && seconds == 0) {
+                window.BlanksGameInstance.socket.send('{ "action": "round_expired" }');
+                return;
+            }
+
+            setTimeout(tickTime, 1000);
+        };
+
+        setTimeout(tickTime, 1);
+    }
 
     var blackCardWrapper = document.createElement('div');
     blackCardWrapper.id = 'question_card';
@@ -334,7 +431,7 @@ BlanksGame.prototype.handleMessage = function(e) {
                 case 0:
                     if (data.judge == null || data.judge.username == username) {
                         // Show configure game options screen
-                        game.loadConfigForm();
+                        game.configForm = game.loadConfigForm();
                     }
                     else {
                         // Show awaiting game start screen
@@ -391,7 +488,8 @@ BlanksGame.prototype.handleMessage = function(e) {
             }
 
             var winnerHeading = document.createElement('h3');
-            winnerHeading.innerText = data.winner.username + t(' is the round winner');
+            winnerHeading.className = 'round-winner-label';
+            winnerHeading.innerHTML = '<strong>' + data.winner.username + '</strong> ' + t('is the round winner') + ': ';
             game.parentElement.appendChild(winnerHeading);
 
             var connectedUsers = document.createElement('div');
@@ -400,15 +498,18 @@ BlanksGame.prototype.handleMessage = function(e) {
             // game.components.playerList.redraw(); // this will happen when components refreshed
             game.parentElement.appendChild(connectedUsers);
 
-            var nextRoundWarning = document.createElement('div');
-            nextRoundWarning.innerText = 'Next round starting in 10 seconds';
-            game.parentElement.appendChild(nextRoundWarning);
+            var nextRoundWarning = document.createElement('span');
+            nextRoundWarning.innerText = t('next round starting in [time] seconds');
+            nextRoundWarning.innerText = nextRoundWarning.innerText.replace('[time]', '10');
+            winnerHeading.appendChild(nextRoundWarning);
             
             var timeToNextRound = 10;
 
             var refreshNextRound = function() {
                 timeToNextRound--;
-                nextRoundWarning.innerText = t('Next round starting in ' + timeToNextRound + ' seconds');
+                var newText = t('next round starting in [time] seconds');
+                newText = newText.replace('[time]', timeToNextRound);
+                nextRoundWarning.innerText = t(newText);
 
                 if (timeToNextRound > 0) {
                     window.setTimeout(refreshNextRound, 1000);
@@ -534,7 +635,15 @@ BlanksGame.prototype.startGame = function(event) {
     var game = window.BlanksGameInstance;
     if (!game.clientIsGameHost) return;
 
-    game.socket.send('{ "action": "start_game" }');
+    game.winningScore = game.configForm.winningScore.value;
+
+    var maxTimeOptions = [0, 30000, 60000, 90000, 120000, 180000, 300000];
+    game.maxTime = maxTimeOptions[game.configForm.maxTime.value];
+
+    game.socket.send('{ "action": "start_game", "winningScore": "' + game.winningScore + '", "maxRoundTime": "' + game.maxTime + '" }');
+
+    game.configForm = null;
+
     // game.startGameButton.disabled = true;
     event.preventDefault();
 };

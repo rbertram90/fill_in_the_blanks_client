@@ -39,9 +39,14 @@ body > header {
     }
 }
 
-#game_config_form {
+#game_config_form, #awaiting_game_start {
     display: flex;
 }
+#awaiting_game_start #connected_users,
+#awaiting_game_start .waiting_panel  {
+    flex-basis: 50%;
+}
+
 #game_options {
     width: 100%;
 }
@@ -190,6 +195,24 @@ input[type=radio]:checked:before {
 .player-card p {
     margin-top: 0;
 }
+.player-card .score {
+    font-size: 2em;
+    float: right;
+    padding: 20px;
+}
 .player-card.player-ready {
     background-color: rgb(106, 190, 106);
+}
+.round-winner-label {
+    text-align: center;
+    background-color: rgb(106, 190, 106);
+    padding: 20px;
+    font-size: 1.8em;
+    font-weight: normal;
+}
+.round-timer {
+    font-size: 1.2em;
+    padding:20px;
+    margin-bottom: 20px;
+    background-color: #f6f6f6;
 }

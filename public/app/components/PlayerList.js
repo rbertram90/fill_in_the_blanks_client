@@ -42,6 +42,9 @@ PlayerList.prototype.redraw = function() {
 
         if (player.status == 'Card(s) submitted' || player.status == 'Card czar') playerWrapper.className = 'player-card player-ready';
 
+        var playerScore = helper.element({ tag:'span', text:player.score, class:'score' });
+        playerWrapper.appendChild(playerScore);
+        
         var playerName = helper.element({ tag:'h4', text:player.username });
         playerWrapper.appendChild(playerName);
 

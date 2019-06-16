@@ -410,6 +410,21 @@ BlanksGame.prototype.loadJudgeScreen = function(data, playerIsJudge) {
     this.parentElement.appendChild(resultsWrapper);
 };
 
+BlanksGame.prototype.loadResultsScreen = function(data) {
+    var helper = new DOMHelper();
+
+    var heading = helper.element({ tag:'h2', text:t('Game finished') });
+    this.parentElement.appendChild(heading);
+
+    var leaderboard = helper.element({ tag:'div', id:'leaderboard' });
+
+    this.components.playerList = new PlayerList(this, leaderboard);
+    this.components.playerList.players = data.players;
+    this.components.playerList.winScreen();
+
+    this.parentElement.appendChild(leaderboard);
+};
+
 BlanksGame.prototype.handleMessage = function(e) {
     var data = JSON.parse(e.data);
     var game = window.BlanksGameInstance;
@@ -530,6 +545,11 @@ BlanksGame.prototype.handleMessage = function(e) {
         case 'duplicate_username':
             game.connectForm.errors.innerHTML = '<p class="error">' + t('Username already in use') + '</p>';
             break;
+
+        case 'game_won':
+            game.parentElement.innerHTML = '';
+            game.loadResultsScreen(data);
+            break;
     }
 
     // Main call to let the UI update itself!
@@ -639,6 +659,7 @@ BlanksGame.prototype.startGame = function(event) {
 
     var maxTimeOptions = [0, 30000, 60000, 90000, 120000, 180000, 300000];
     game.maxTime = maxTimeOptions[game.configForm.maxTime.value];
+    if (typeof game.maxTime == 'undefined') game.maxTime = 0;
 
     game.socket.send('{ "action": "start_game", "winningScore": "' + game.winningScore + '", "maxRoundTime": "' + game.maxTime + '" }');
 

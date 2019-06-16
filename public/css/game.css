@@ -216,3 +216,18 @@ input[type=radio]:checked:before {
     margin-bottom: 20px;
     background-color: #f6f6f6;
 }
+
+#leaderboard .player-card h3 {
+    font-size: 1.6em;
+}
+#leaderboard .player-card:first-child {
+    background-color: gold;
+}
+
+.winner-text {
+    text-align: center;
+    background-color: #f6f6f6;
+    padding: 20px;
+    font-size: 1.2em;
+    font-weight: normal;
+}

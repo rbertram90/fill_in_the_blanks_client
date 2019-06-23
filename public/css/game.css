@@ -75,6 +75,7 @@ p.error {
 
 #question_card {
     background-color: #222;
+    font-size: 1.2em;
     color: white;
     padding: 10px;
     margin: 0;
@@ -86,19 +87,55 @@ p.error {
     margin: 0 20px 20px 20px;
 }
 
-#player_card_submissions .form-element {
+#player_hand .form-element {
     width: 12.5%;
     display: inline-block;
     box-sizing: border-box;
     padding: 10px;
     text-align: center;
+    vertical-align: top;
 }
 
-@media (max-width:1600px) { #player_card_submissions .form-element { width: 20%; } }
-@media (max-width:1400px) { #player_card_submissions .form-element { width: 25%; } }
-@media (max-width:960px) { #player_card_submissions .form-element { width: 33.3333%; } }
-@media (max-width:700px) { #player_card_submissions .form-element { width: 50%; } }
-@media (max-width:400px) { #player_card_submissions .form-element { width: 100%; } }
+#player_hand .form-element .card {
+    max-width: none;
+}
+
+@media (max-width:1600px) { #player_hand .form-element { width: 20%; } }
+@media (max-width:1400px) { #player_hand .form-element { width: 25%; } }
+@media (max-width:960px) { #player_hand .form-element { width: 33.3333%; } }
+@media (max-width:700px) { #player_hand .form-element { width: 50%; } }
+@media (max-width:400px) { #player_hand .form-element { width: 100%; } }
+
+#player_card_submissions {
+    display: flex;
+}
+#player_card_submissions .selectable-wrapper {
+    width: 12.5%;
+    display: flex;
+    align-items: flex-end;
+    flex-basis: 25%;
+    cursor: pointer;
+    border: 5px solid transparent;
+}
+#player_card_submissions .selectable-wrapper:hover {
+    border-color: #eee;
+}
+
+#player_card_submissions .selectable-wrapper.active {
+    border: 5px solid blue;
+}
+#player_card_submissions .selectable-wrapper.winner {
+    border: 5px solid green;
+}
+#player_card_submissions .selectable-wrapper.active:hover {
+    border: 5px solid blue;
+}
+#player_card_submissions .selectable-wrapper.winner:hover {
+    border: 5px solid green;
+}
+
+@media (max-width:960px) { #player_card_submissions .selectable-wrapper { width: 50%; } }
+@media (max-width:600px) { #player_card_submissions .selectable-wrapper { width: 100%; } }
 
 #player_hand button,
 #player_submissions button {
@@ -117,18 +154,13 @@ p.error {
     padding: 10px;
     display: inline-block;
     user-select: none;
-    vertical-align: top;
+    vertical-align: bottom;
     border-radius: 8px;
     border: 5px solid white;
     box-shadow: 2px 2px 5px #555;
     text-align: left;
+    max-width: 250px;
 }
-    .card.active {
-        border: 5px solid blue;
-    }
-    .card.winner {
-        border: 5px solid green;
-    }
 
 button {
     background-color: #21007F;
@@ -230,4 +262,22 @@ input[type=radio]:checked:before {
     padding: 20px;
     font-size: 1.2em;
     font-weight: normal;
+}
+
+.simple-grey-panel {
+    background-color: #f6f6f6;
+    padding: 20px;
+}
+.custom-text-wrapper,
+.custom-image.wrapper {
+    padding: 10px;
+}
+.custom-text-wrapper textarea {
+    resize: vertical;
+    width: 100%;
+    font-family: 'Source Sans Pro', Arial, sans-serif;
+    height: 140px;
+}
+.card-type-select {
+    margin-bottom: 10px;
 }

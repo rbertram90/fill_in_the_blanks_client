@@ -14,39 +14,130 @@ PlayerDeck.prototype = Object.create(Component.prototype);
 PlayerDeck.prototype.constructor = PlayerDeck;
 
 PlayerDeck.prototype.redraw = function() {
+    var helper = new DOMHelper();
     var player = this.game.player;
 
-    var errorWrapper = document.createElement('div');
+    var errorWrapper = helper.element({ tag:'div' });
     this.errorWrapper = errorWrapper;
     this.parentElement.appendChild(errorWrapper);
 
     var form = document.createElement('form');
-    form.id = 'player_card_submissions';
+    form.id = 'player_hand';
     this.parentElement.appendChild(form);
 
-    for (var c = 0; c < player.cards.length; c++) {
-        var cardWrapper = document.createElement('div');
-        cardWrapper.className = 'form-element';
+    // Answer types
+    var typesWrapper = helper.element({ tag:'div', id:'answer_type_wrapper', class:'simple-grey-panel' });
 
-        var cardElement = document.createElement('p');
-        cardElement.dataset.id = player.cards[c].id;
-        cardElement.setAttribute('contenteditable', true);
-        cardElement.innerHTML = player.cards[c].text;
-        cardElement.className = 'card';
-        // cardElement.addEventListener('click', this.selectCard);
+    var switchType = function(type, cardIndex) {
+        switch (type) {
+            case 'premade':
+                document.getElementById('custom_text_wrapper_'+cardIndex).style.display = 'none';
+                document.getElementById('custom_image_wrapper_'+cardIndex).style.display = 'none';
+                var card = document.getElementById('card_'+cardIndex);
+                card.innerHTML = card.dataset.originalText;
+                break;
+            case 'customtext':
+                document.getElementById('custom_text_wrapper_'+cardIndex).style.display = 'block';
+                document.getElementById('custom_image_wrapper_'+cardIndex).style.display = 'none';
+                break;
+            case 'image':
+                document.getElementById('custom_text_wrapper_'+cardIndex).style.display = 'none';
+                document.getElementById('custom_image_wrapper_'+cardIndex).style.display = 'block';
+                break;
+        }
+    };
+
+    for (var c = 0; c < player.cards.length; c++) {
+        var cardWrapper = helper.element({ tag:'div', class:'form-element' });
+
+        var cardElement = helper.element({
+            tag: 'p',
+            class: 'card',
+            id: 'card_'+c,
+            html: player.cards[c].text,
+            data: {
+                id: player.cards[c].id,
+                'original-text': player.cards[c].text
+            }
+        });
+        // cardElement.setAttribute('contenteditable', true);
         cardWrapper.appendChild(cardElement);
 
+        var radiobuttonswrapper = helper.element({ tag:'div' });
+
         for (var i = 0; i < this.game.currentQuestion.blanks; i++) {
-            var radioButton = document.createElement('input');
-            radioButton.type = 'radio';
-            radioButton.name = 'card_' + i;
-            radioButton.value = player.cards[c].id;
-            radioButton.setAttribute('data-cardnum', i+1);
-            cardWrapper.appendChild(radioButton);
+            
+            var radioButton = helper.element({
+                tag: 'input',
+                type: 'radio',
+                name: 'card_' + i,
+                value: player.cards[c].id,
+                data: {
+                    cardnum: i+1
+                }
+            });
+            radiobuttonswrapper.appendChild(radioButton);
         }
 
+        cardWrapper.appendChild(radiobuttonswrapper);
+
+        // Answer input type
+        var answerType = helper.element({ tag:'select',
+            id:'answer_type_'+c,
+            class: 'card-type-select',
+            data: {
+                index: c
+            }
+        });
+
+        var typeOption1 = helper.element({ tag:'option', value:'premade', text:t('Default text') });
+        var typeOption2 = helper.element({ tag:'option', value:'customtext', text:t('Custom text') });
+        var typeOption3 = helper.element({ tag:'option', value:'image', text:t('Image') });
+        answerType.appendChild(typeOption1);
+        answerType.appendChild(typeOption2);
+        answerType.appendChild(typeOption3);
+        
+        cardWrapper.appendChild(answerType);
+        answerType.addEventListener('change', function(event) {
+            switchType(this.value, this.dataset.index);
+        });
+
+        // Custom text
+        var customCardWrapper = helper.element({ tag:'div', id:'custom_text_wrapper_'+c, class:'custom-text-wrapper simple-grey-panel' });
+
+        var textBoxLabel = helper.element({ tag:'label', for:'custom_text_input_'+c, text:t('Your text') });
+        var textBox = helper.element({ tag:'textarea', id:'custom_text_input_'+c, data:{cardindex:c} });
+
+        textBox.addEventListener('keyup', function(event) {
+            document.getElementById('card_'+this.dataset.cardindex).innerText = this.value;
+        });
+        textBox.setAttribute('onkeydown', 'if(event.keyCode == 13) return false;');
+
+        customCardWrapper.appendChild(textBoxLabel);
+        customCardWrapper.appendChild(textBox);
+        customCardWrapper.style.display = 'none';
+        cardWrapper.appendChild(customCardWrapper);
+
+        // Image
+        var customImageWrapper = helper.element({ tag:'div', id:'custom_image_wrapper_'+c, class:'custom-image-wrapper' });
+        var imageFieldWrapper = helper.element({ tag:'div', class:'simple-grey-panel' });
+        var imageSourceLabel = helper.element({ tag:'label', for:'custom_image_input', text:t('URL to image')+': ' });
+        var imageSource = helper.element({ tag:'input', type:'text', id:'custom_image_input', data:{cardindex:c} });
+        imageSource.style.width = '100%';
+        imageSource.placeholder = 'http://example.com/image.jpg';
+
+        imageSource.addEventListener('keyup', function(event) {
+            document.getElementById('card_'+this.dataset.cardindex).innerHTML = '<a href="' + this.value + '" target="_blank"><img src="' + this.value + '" alt="Image not valid" style="max-width:100%; max-height:90%"></a><br><small>' + t('Click to view full size') + '</small>';
+        });
+
+        imageFieldWrapper.appendChild(imageSourceLabel);
+        imageFieldWrapper.appendChild(imageSource);
+        customImageWrapper.style.display = 'none';
+        customImageWrapper.appendChild(imageFieldWrapper);
+        cardWrapper.appendChild(customImageWrapper);
+
         form.appendChild(cardWrapper);
-    }
+    }  
 };
 
 /**
@@ -70,7 +161,7 @@ PlayerDeck.prototype.showError = function(text) {
  */
 PlayerDeck.prototype.submitCards = function (event) {
     var game = window.BlanksGameInstance;
-    var form = document.forms.namedItem("player_card_submissions");
+    var form = document.forms.namedItem("player_hand");
     var thisComponent = game.components.playerDeck;
 
     thisComponent.submitButton.disabled = true;

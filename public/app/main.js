@@ -281,11 +281,8 @@ BlanksGame.prototype.loadAwaitGameStart = function() {
 BlanksGame.prototype.loadGameScreen = function(data) {
     var helper = new DOMHelper();
 
-    var wrapper = document.createElement('div');
-    wrapper.id = 'game_window';
-
-    var heading = document.createElement('h2');
-    heading.innerText = t('Choose your card(s)');
+    var wrapper = helper.element({ tag:'div', id:'game_window' });
+    var heading = helper.element({ tag:'h2', text:t('Choose your card(s)') });
     wrapper.appendChild(heading);
 
     // @todo If someone connects half way through a round then the timer on their screen will be wrong...
@@ -312,31 +309,27 @@ BlanksGame.prototype.loadGameScreen = function(data) {
             if (minutes <= 0 && seconds <= 0) return;
             setTimeout(tickTime, 1000);
         };
-
+        
         setTimeout(tickTime, 1);
     }
 
-    var blackCard = document.createElement('div');
-    blackCard.id = 'question_card';
-    blackCard.innerHTML = data.questionCard.text;
+    // Question
+    var blackCard = helper.element({ tag:'div', id:'question_card', html:data.questionCard.text })
     wrapper.appendChild(blackCard);
 
-    // Players cards
-    var playerCardsWrapper = document.createElement('div');
-    playerCardsWrapper.id = 'player_hand';
+    // Answer cards
+    var playerCardsWrapper = helper.element({ tag:'div', id:'player_hand' });
 
     this.components.playerDeck = new PlayerDeck(this, playerCardsWrapper);
     this.components.playerDeck.redraw();
 
-    var submitCardsButton = document.createElement('button');
-    submitCardsButton.innerText = t('Play card(s)');
+    // Submit button
+    var submitCardsButton = helper.element({ tag:'button', text:t('Play card(s)') });
     submitCardsButton.addEventListener('click', this.components.playerDeck.submitCards);
     this.components.playerDeck.submitButton = submitCardsButton;
 
     playerCardsWrapper.appendChild(submitCardsButton);
-
     wrapper.appendChild(playerCardsWrapper);
-
     this.parentElement.appendChild(wrapper);
 };
 
@@ -454,13 +447,14 @@ BlanksGame.prototype.handleMessage = function(e) {
                     }
                     break;
                 // Round in progress
-                case 1:
-                    // @todo
-                    break;
+                // This is handled by resending the round_start message from server
+                // case 1:
+                //     break;
 
                 // Round Judging
-                case 2:
-                    break;
+                // This is handled by resending the round_judge message from server
+                // case 2:
+                //    break;
             }
             break;
 
@@ -496,7 +490,7 @@ BlanksGame.prototype.handleMessage = function(e) {
             break;
 
         case 'round_winner':
-            document.getElementById('played_card' + data.card).className = 'card winner';
+            document.getElementById('submission_' + data.card).className = 'selectable-wrapper winner';
 
             if (game.clientIsGameHost) {
                 window.setTimeout(game.startNextRound, 10000);

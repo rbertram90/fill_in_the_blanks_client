@@ -36,9 +36,7 @@
     <script src="/app/translate.js"></script>
     <script src="/app/Player.js"></script>
     <script src="/app/Component.js"></script>
-    <script src="/app/components/MessagesPanel.js"></script>
     <script src="/app/components/PlayerList.js"></script>
-    <script src="/app/components/RoundQuestion.js"></script>
     <script src="/app/components/RoundSubmissions.js"></script>
     <script src="/app/components/PlayerDeck.js"></script>
     <script src="/app/main.js"></script>

@@ -133,7 +133,7 @@ BlanksGame.prototype.loadConnectForm = function() {
     iconWrapper.appendChild(iconLabel);
     iconWrapper.appendChild(iconField);
 
-    for (var i = 1; i <= 20; i++) {
+    for (var i = 1; i <= 28; i++) {
         var icon = helper.element({ tag: 'img', src: '/images/player-icons/' + i + '.png', class: 'player-icon',
             alt: 'Player icon ' + i, data: { index:i } });
         if (i == default_icon) icon.className = 'player-icon selected';

@@ -324,7 +324,7 @@ BlanksGame.prototype.loadGameScreen = function(data) {
     this.components.playerDeck.redraw();
 
     // Submit button
-    var submitCardsButton = helper.element({ tag:'button', text:t('Play card(s)') });
+    var submitCardsButton = helper.element({ tag:'button', class:'big', text:t('Play card(s)') });
     submitCardsButton.addEventListener('click', this.components.playerDeck.submitCards);
     this.components.playerDeck.submitButton = submitCardsButton;
 

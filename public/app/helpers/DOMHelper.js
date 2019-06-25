@@ -25,6 +25,7 @@ DOMHelper.prototype.element = function (data) {
     if (data.name) element.name = data.name;
     if (data.type) element.type = data.type;
     if (data.value) element.value = data.value;
+    if (data.placeholder) element.placeholder = data.placeholder;
     
     if (data.data) {
         Object.keys(data.data).forEach(function(key,index) {

@@ -122,16 +122,96 @@ PlayerDeck.prototype.redraw = function() {
         var customImageWrapper = helper.element({ tag:'div', id:'custom_image_wrapper_'+c, class:'custom-image-wrapper' });
         var imageFieldWrapper = helper.element({ tag:'div', class:'simple-grey-panel' });
         var imageSourceLabel = helper.element({ tag:'label', for:'custom_image_input', text:t('URL to image')+': ' });
+        imageFieldWrapper.appendChild(imageSourceLabel);
+
         var imageSource = helper.element({ tag:'input', type:'text', id:'custom_image_input', data:{cardindex:c} });
         imageSource.style.width = '100%';
         imageSource.placeholder = 'http://example.com/image.jpg';
-
         imageSource.addEventListener('keyup', function(event) {
             document.getElementById('card_'+this.dataset.cardindex).innerHTML = '<a href="' + this.value + '" target="_blank"><img src="' + this.value + '" alt="Image not valid" style="max-width:100%; max-height:90%"></a><br><small>' + t('Click to view full size') + '</small>';
         });
-
-        imageFieldWrapper.appendChild(imageSourceLabel);
         imageFieldWrapper.appendChild(imageSource);
+
+        var giphyButton = helper.element({ tag:'button', type:'button', text:'Search for GIF', data:{cardindex:c} });
+        giphyButton.addEventListener('click', function(e) {
+            var cardIndex = this.dataset.cardindex;
+
+            var container = document.getElementById('giphy_search_box');
+            if (!container) {
+                container = helper.element({ tag:'div', id: 'giphy_search_box' });
+                document.body.appendChild(container);
+            }
+
+            var innerHeading = helper.element({ tag:'h1', text:t('Search GIPHY') });
+            container.appendChild(innerHeading);
+
+            var paragraph = helper.element({ tag:'p', text:t('Enter your search text to search giphy.com API for GIFs, then click the image you want to use and press "Select" to confirm.') });
+            container.appendChild(paragraph);
+
+            var innerInput = helper.element({ tag:'input', type:'text', id:'giphy_search_text', placeholder:'Your search text' });
+            container.appendChild(innerInput);
+
+            var innerButton = helper.element({ tag:'button', type:'button', id:'giphy_search', text:t('Search') });
+            container.appendChild(innerButton);
+            innerButton.addEventListener('click', function(e) {
+                var searchTerm = encodeURIComponent(document.getElementById('giphy_search_text').value);
+                var xhr = $.get("http://api.giphy.com/v1/gifs/search?q=" + searchTerm + "&api_key=XXX&limit=16");
+                xhr.done(function(data) {
+                    var wrapper = document.getElementById('giphy_results');
+
+                    for(var i = 0; i < data.data.length; i++) {
+                        var item = data.data[i];
+                        var imageURL = item.images.fixed_width_downsampled.url;
+                        var selectableDiv = helper.element({ tag:'div', class:'giphy_selectable', data: {url:imageURL } });
+                        var giphyImage = helper.element({ tag:'img', src:imageURL, alt:item.title });
+                        selectableDiv.appendChild(giphyImage);
+                        wrapper.appendChild(selectableDiv);
+
+                        selectableDiv.addEventListener('click', function(e) {
+                            $('.giphy_selectable.active').removeClass('active');
+
+                            this.className = 'giphy_selectable active';
+
+                            document.getElementById('giphy_submit').style.display = 'inline-block';
+                        });
+                    }
+
+                });
+
+                e.preventDefault();
+            });
+
+            var resultsArea = helper.element({ tag:'div', id:'giphy_results' });
+            container.appendChild(resultsArea);
+
+            var submitButton = helper.element({ tag:'button', type:'button', id:'giphy_submit', class:'big', text:t('Select') });
+            submitButton.style.display = 'none';
+            container.appendChild(submitButton);
+            submitButton.addEventListener('click', function(e) {
+                // add URL to text box
+                var url = $('.giphy_selectable.active').data('url');
+                var imageInput = document.querySelector('input[data-cardindex="' + cardIndex +'"]');
+
+                imageInput.value = url;
+                imageInput.dispatchEvent(new Event('keyup'));
+
+                document.getElementById('giphy_search_box').innerHTML = '';
+                document.getElementById('giphy_search_box').style.display = 'none';
+            });
+
+            var closeButton = helper.element({ tag:'button', type:'button', class:'secondary', id:'giphy_close', text:t('Close') });
+            container.appendChild(closeButton);
+            closeButton.addEventListener('click', function(e) {
+                document.getElementById('giphy_search_box').innerHTML = '';
+                document.getElementById('giphy_search_box').style.display = 'none';
+            });
+            
+            container.style.display = 'block';
+            e.preventDefault();
+        });
+
+        imageFieldWrapper.appendChild(giphyButton);
+
         customImageWrapper.style.display = 'none';
         customImageWrapper.appendChild(imageFieldWrapper);
         cardWrapper.appendChild(customImageWrapper);

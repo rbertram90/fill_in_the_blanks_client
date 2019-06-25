@@ -137,7 +137,7 @@ p.error {
 @media (max-width:960px) { #player_card_submissions .selectable-wrapper { width: 50%; } }
 @media (max-width:600px) { #player_card_submissions .selectable-wrapper { width: 100%; } }
 
-#player_hand button,
+button.big,
 #player_submissions button {
     padding: 15px 0;
     width: 300px;
@@ -178,6 +178,14 @@ button:disabled {
     background-color: #e0e0e0;
     color: #888;
 }
+
+button.secondary {
+    background-color: rgb(25, 13, 58);
+}
+button.secondary:hover {
+    background-color: rgb(49, 24, 119);
+}
+
 input[type=radio] {
     width: 20px;
     height: 20px;
@@ -280,4 +288,30 @@ input[type=radio]:checked:before {
 }
 .card-type-select {
     margin-bottom: 10px;
+}
+
+#giphy_search_box {
+    position: fixed;
+    top: 0;
+    left: 0;
+    height: 100vh;
+    width: 100vw;
+    background-color: #fff;
+    z-index: 100;
+    overflow: auto;
+}
+.giphy_selectable {
+    width: 200px;
+    display: inline-block;
+}
+.giphy_selectable.active {
+    border: 4px solid blue;
+}
+#giphy_search_text {
+    padding: 6px;
+    font-size: 18px;
+}
+#giphy_submit {
+    padding-left: 30px;
+    padding-right: 30px;
 }

@@ -30,6 +30,12 @@
     <?php else: ?>
         var translations = <?php print json_encode(Translate::getTranslations()); ?>;
     <?php endif; ?>
+
+    <?php if (file_exists(__DIR__ .'/../config.json')): ?>
+        var config = <?php include (__DIR__ .'/../config.json') ?>;
+    <?php else: ?>
+        var config = {};
+    <?php endif; ?>
     </script>
 
     <script src="/lib/jquery-3.4.1.min.js"></script>

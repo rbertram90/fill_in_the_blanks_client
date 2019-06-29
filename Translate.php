@@ -9,11 +9,7 @@ class Translate
 
     public static function t($string, $return = false)
     {
-        if (count(self::$translations) == 0 && !self::$checked && self::$language!='en') {
-            // Only try to load the translations once
-            self::$translations = include __DIR__ .'/lang/'. self::$language .'.php';
-            self::$checked = true;
-        }
+        self::getTranslations();
 
         if (array_key_exists($string, self::$translations)) {
             if ($return) {
@@ -30,6 +26,13 @@ class Translate
     }
 
     public static function getTranslations() {
+        if (count(self::$translations) == 0 && !self::$checked && self::$language!='en') {
+            // Only try to load the translations once
+            if (file_exists(__DIR__ .'/lang/'. self::$language .'.php')) {
+                self::$translations = include __DIR__ .'/lang/'. self::$language .'.php';
+            }
+            self::$checked = true;
+        }
         return self::$translations;
     }
 }

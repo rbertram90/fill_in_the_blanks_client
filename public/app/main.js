@@ -30,6 +30,8 @@ function BlanksGame() {
     this.currentQuestion = {};
     this.winningScore = 5; // default
     this.maxTime = 120000; // default - 2 minutes
+    this.allowCustomText = true;
+    this.allowImages = false;
 
     // Initialise connection form
     this.connectForm = this.loadConnectForm();
@@ -182,28 +184,20 @@ BlanksGame.prototype.loadConfigForm = function() {
     var helper = new DOMHelper();
 
     // Wrapper
-    var wrapper = document.createElement('div');
-    wrapper.id = 'game_config_form';
-
-    var optionsWrapper = document.createElement('div');
-    optionsWrapper.id = 'game_options';
+    var wrapper = helper.element({ tag: 'div', id: 'game_config_form' });
+    var optionsWrapper = helper.element({ tag: 'div', id: 'game_options' });
+    wrapper.appendChild(optionsWrapper);
 
     // Heading
-    var heading = document.createElement('h2');
-    heading.innerText = t('Configure game');
+    var heading = helper.element({ tag: 'h2', text: t('Configure game') });
     optionsWrapper.appendChild(heading);
 
     // What's the winning score?
-    var winScoreWrapper = document.createElement('div');
-    var winScoreLabel = document.createElement('label');
-    winScoreLabel.innerText = t('Winning score');
-    winScoreLabel.setAttribute('for', 'winning_score');
-    var winScoreSelect = document.createElement('select');
-    winScoreSelect.id = 'winning_score';
+    var winScoreWrapper = helper.element({ tag: 'div' });
+    var winScoreLabel = helper.element({ tag: 'label', for: 'winning_score', text: t('Winning score') });
+    var winScoreSelect = helper.element({ tag: 'select', id: 'winning_score' });
     for (var i = 3; i < 11; i++) {
-        var option = document.createElement('option');
-        option.innerText = i;
-        option.value = i;
+        var option = helper.element({ tag: 'option', text: i, value: i });
         winScoreSelect.appendChild(option);
     }
     winScoreWrapper.appendChild(winScoreLabel);
@@ -223,6 +217,24 @@ BlanksGame.prototype.loadConfigForm = function() {
     winScoreWrapper.appendChild(maxTimeSelect);
     optionsWrapper.appendChild(maxTimeWrapper);
 
+    // Enable custom text
+    var typeWrapper = helper.element({ tag: 'div' });
+    var allowCustomTextLabel = helper.element({ tag: 'label', text: 'Allow custom text', for: 'allow_custom_text' });
+    var allowCustomTextCheck = helper.element({ tag: 'input', type: 'checkbox', id: 'allow_custom_text' });
+    allowCustomTextCheck.setAttribute('checked', 'checked');
+
+    typeWrapper.appendChild(allowCustomTextLabel);
+    typeWrapper.appendChild(allowCustomTextCheck);
+    optionsWrapper.appendChild(typeWrapper);
+
+    // Enable images
+    var allowImagesLabel = helper.element({ tag: 'label', text: 'Allow images', for: 'allow_images' });
+    var allowImagesCheck = helper.element({ tag: 'input', type: 'checkbox', id: 'allow_images' });
+
+    typeWrapper.appendChild(allowImagesLabel);
+    typeWrapper.appendChild(allowImagesCheck);
+    optionsWrapper.appendChild(typeWrapper);
+    
     // Finish button
     var submitButton = document.createElement('button');
     submitButton.setAttribute('type', 'button');
@@ -230,22 +242,20 @@ BlanksGame.prototype.loadConfigForm = function() {
     optionsWrapper.appendChild(submitButton);
     submitButton.addEventListener('click', this.startGame);
 
-    wrapper.appendChild(optionsWrapper);
-
     // Connected users display
     var connectedUsers = document.createElement('div');
     connectedUsers.id = 'connected_users';
-
     this.components.playerList = new PlayerList(this, connectedUsers);
     this.components.playerList.redraw();
-
     wrapper.appendChild(connectedUsers);
 
     this.parentElement.appendChild(wrapper);
 
     return {
         maxTime: maxTimeSelect,
-        winningScore: winScoreSelect
+        winningScore: winScoreSelect,
+        allowCustomText: allowCustomTextCheck,
+        allowImages: allowImagesCheck
     };
 };
 
@@ -428,7 +438,6 @@ BlanksGame.prototype.handleMessage = function(e) {
 
             // Remove connect form from DOM
             game.connectForm.form.parentElement.removeChild(game.connectForm.form);
-
             game.connectForm = null;
 
             // Create player
@@ -471,6 +480,12 @@ BlanksGame.prototype.handleMessage = function(e) {
             break;
 
         case 'round_start':
+            if (game.configForm) {
+                game.configForm = null;
+            }
+
+            game.allowCustomText = data.allowCustomText;
+            game.allowImages = data.allowImages;
             game.parentElement.innerHTML = '';
             game.currentJudge = data.currentJudge.username;
             game.currentQuestion = data.questionCard;
@@ -655,9 +670,10 @@ BlanksGame.prototype.startGame = function(event) {
     game.maxTime = maxTimeOptions[game.configForm.maxTime.value];
     if (typeof game.maxTime == 'undefined') game.maxTime = 0;
 
-    game.socket.send('{ "action": "start_game", "winningScore": "' + game.winningScore + '", "maxRoundTime": "' + game.maxTime + '" }');
+    game.allowCustomText = game.configForm.allowCustomText.checked;
+    game.allowImages = game.configForm.allowImages.checked;
 
-    game.configForm = null;
+    game.socket.send('{ "action": "start_game", "winningScore": "' + game.winningScore + '", "maxRoundTime": "' + game.maxTime + '", "allowCustomText": ' + game.allowCustomText + ', "allowImages": ' + game.allowImages + ' }');
 
     // game.startGameButton.disabled = true;
     event.preventDefault();

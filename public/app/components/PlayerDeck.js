@@ -113,22 +113,35 @@ PlayerDeck.prototype.redraw = function() {
         }
 
         if (this.game.allowImages) {
+
+            var populateCardImageHTML = function (e) {
+                var cardId = this.dataset.cardindex;
+                var imageUrl = document.getElementById('custom_image_input_' + cardId).value;
+                var imageCaption = document.getElementById('custom_image_caption_' + cardId).value;
+                document.getElementById('card_'+cardId).innerHTML = '<a href="' + imageUrl + '" target="_blank"><img src="' + imageUrl + '" alt="Image not valid" style="max-width:100%; max-height:90%"></a><br><small>' + t('Click to view full size') + '</small><br>&quot;' + imageCaption + '&quot;';
+            };
+
             var typeOption3 = helper.element({ tag:'option', value:'image', text:t('Image') });
             answerType.appendChild(typeOption3);
 
             // Image
-            var customImageWrapper = helper.element({ tag:'div', id:'custom_image_wrapper_'+c, class:'custom-image-wrapper' });
+            var customImageWrapper = helper.element({ tag:'div', id:'custom_image_wrapper_' + c, class:'custom-image-wrapper' });
             var imageFieldWrapper = helper.element({ tag:'div', class:'simple-grey-panel' });
-            var imageSourceLabel = helper.element({ tag:'label', for:'custom_image_input', text:t('URL to image')+': ' });
+            var imageSourceLabel = helper.element({ tag:'label', for:'custom_image_input_' + c, text:t('URL to image')+': ' });
             imageFieldWrapper.appendChild(imageSourceLabel);
 
-            var imageSource = helper.element({ tag:'input', type:'text', id:'custom_image_input', data:{cardindex:c} });
+            var imageSource = helper.element({ tag:'input', type:'text', id:'custom_image_input_' + c, data:{cardindex:c} });
             imageSource.style.width = '100%';
             imageSource.placeholder = 'http://example.com/image.jpg';
-            imageSource.addEventListener('keyup', function(event) {
-                document.getElementById('card_'+this.dataset.cardindex).innerHTML = '<a href="' + this.value + '" target="_blank"><img src="' + this.value + '" alt="Image not valid" style="max-width:100%; max-height:90%"></a><br><small>' + t('Click to view full size') + '</small>';
-            });
+            imageSource.addEventListener('keyup', populateCardImageHTML);
             imageFieldWrapper.appendChild(imageSource);
+
+            // Caption
+            var imageCaptionLabel = helper.element({ tag:'label', for:'custom_image_caption_' + c, text:t('Caption')+': ' });
+            var imageCaption = helper.element({ tag: 'textarea', id: 'custom_image_caption_' + c, data:{cardindex:c} });
+            imageCaption.addEventListener('keyup', populateCardImageHTML);
+            imageFieldWrapper.appendChild(imageCaptionLabel);
+            imageFieldWrapper.appendChild(imageCaption);
 
             if (config.giphy_api_key) {
 

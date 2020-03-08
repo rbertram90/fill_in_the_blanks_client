@@ -148,7 +148,7 @@ button.big,
 
 .card {
     background-color: white;
-    height: 200px;
+    min-height: 200px;
     width: 100%;
     box-sizing: border-box;
     padding: 10px;

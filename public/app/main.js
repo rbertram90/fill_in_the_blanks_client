@@ -20,7 +20,6 @@ function BlanksGame() {
     document.body.appendChild(this.parentElement);
 
     this.socket = null;
-    this.draggedCard = null;
 
     // Game variables
     this.player = null;
@@ -471,40 +470,23 @@ BlanksGame.prototype.loadGameScreen = function(data) {
         var dropzone = helper.element({ tag:'div', class:'card-dropzone' });
         placeholder.appendChild(dropzone);
 
-        dropzone.addEventListener("dragover", function (e) {
-            // this is called all the time the element is droppable on here
-            e.preventDefault();
-        });
-        dropzone.addEventListener("dragenter", function (e) {
-            if ($(this).find('p.card').length > 0) {
-                this.style.backgroundColor = "red";
-            }
-            else {
-                this.style.backgroundColor = "#666";
-                e.dataTransfer.dropEffect = "move";
-            }
-            e.preventDefault();
-        });
-        dropzone.addEventListener("dragleave", function (e) {
-            // console.log(e);
-            if ($(this).find('p.card').length > 0) {
-                this.style.backgroundColor = "green";
-            }
-            else {
-                this.style.backgroundColor = "transparent";
-            }
-            e.preventDefault();
-        });
-        dropzone.addEventListener("drop", function (e) {
-            var game = window.BlanksGameInstance;
-            if ($(this).find('p.card').length > 0) {
-            }
-            else {
-                this.append(game.draggedCard);
+        $(dropzone).droppable({
+            drop: function(event, ui) {
+                var draggedCard = ui.draggable;
+
+                // Enable the original parent to now be droppable
+                draggedCard.parent().droppable("enable");
+
+                $(this).append(draggedCard);
+                draggedCard.css('top', 0);
+                draggedCard.css('left', 0);
+
+                // Disable so no more cards can be added to this space
+                $(event.target).droppable("disable");
+
+                // Enable the edit button
                 $(this.parentElement).find('button.edit-card').prop('disabled', false);
-                game.draggedCard = null;
             }
-            this.style.backgroundColor = "green";
         });
 
         if (game.allowCustomText || game.allowImages) {

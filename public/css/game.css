@@ -340,3 +340,14 @@ input[type=radio]:checked:before {
 .card-no-dropzone, #question_card, .input-wrapper { flex-basis: 20%; }
 @media (max-width:700px) { #in_play { flex-wrap: wrap; } .input-wrapper, .card-no-dropzone, #question_card { flex-basis: 40%; } }
 @media (max-width:400px) { .input-wrapper, .card-no-dropzone, #question_card { width: 100%; margin: 0; } }
+
+.card-dropzone.ui-droppable-hover,
+.form-element.ui-droppable-hover {
+    background-color: yellow;
+}
+.card-dropzone.ui-droppable-disabled {
+    background-color: green;
+}
+.card-dropzone.invalid {
+    background-color: red;
+}

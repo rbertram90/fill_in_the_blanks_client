@@ -37,50 +37,33 @@ PlayerDeck.prototype.redraw = function() {
                 'original-text': player.cards[c].text
             }
         });
-        cardElement.setAttribute('draggable', true);
+        $(cardElement).draggable({
+            revert: "invalid"
+        });
         cardWrapper.appendChild(cardElement);
 
-        cardElement.addEventListener("dragstart", function (e) {
-            var game = window.BlanksGameInstance;
-            game.draggedCard = e.target;
-            e.dataTransfer.effectAllowed = "move";
+        $(cardWrapper).droppable({
+            disabled: true,
+            drop: function(event, ui) {
+                if ($(this).find('p.card').length > 0) {
+
+                }
+                else {
+                    var draggedCard = ui.draggable;
+
+                    // Enable the original parent to now be droppable
+                    draggedCard.parent().droppable("enable");
+
+                    $(this).append(draggedCard);
+                    draggedCard.css('top', 0);
+                    draggedCard.css('left', 0);
+
+                    // Disable so no more cards can be added to this space
+                    $(event.target).droppable("disable");
+                }
+            }
         });
 
-        cardWrapper.addEventListener("dragover", function (e) {
-            // this is called all the time the element is droppable on here
-            e.preventDefault();
-        });
-        cardWrapper.addEventListener("dragenter", function (e) {
-            if ($(this).find('p.card').length > 0) {
-                this.style.backgroundColor = "red";
-            }
-            else {
-                this.style.backgroundColor = "#666";
-                e.dataTransfer.dropEffect = "move";
-            }
-            e.preventDefault();
-        });
-        cardWrapper.addEventListener("dragleave", function (e) {
-            this.style.backgroundColor = "transparent";
-            e.preventDefault();
-        });
-        cardWrapper.addEventListener("drop", function (e) {
-            var game = window.BlanksGameInstance;
-            if ($(this).find('p.card').length > 0) {
-            }
-            else {
-                $(game.draggedCard)
-                    .parent()
-                    .css('background-color', 'transparent');
-                $(game.draggedCard.parentElement.parentElement)
-                    .find('button.edit-card')
-                    .prop('disabled', true);
-                this.append(game.draggedCard);
-                game.draggedCard = null;
-            }
-            this.style.backgroundColor = "transparent";
-        });
-        
         form.appendChild(cardWrapper);
     }  
 };

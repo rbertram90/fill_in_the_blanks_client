@@ -1,4 +1,6 @@
 <?php
+    session_start();
+
     include __DIR__ .'/../Translate.php';
 
     if (isset($_GET['lang'])) {
@@ -9,7 +11,6 @@
     if (file_exists(__DIR__ .'/../lang/'. $lang .'.php')) {
         Translate::$language = $lang;
     }
-    
 ?><!DOCTYPE html>
 <html lang="<?php print $lang ?>">
 <head>
@@ -39,6 +40,8 @@
     </script>
 
     <script src="/lib/jquery-3.4.1.min.js"></script>
+    <script src="/lib/jquery-ui.min.js"></script>
+    <script src="/lib/jquery-ui-touch-punch.min.js"></script>
     <script src="/app/helpers/DOMHelper.js"></script>
     <script src="/app/translate.js"></script>
     <script src="/app/Player.js"></script>

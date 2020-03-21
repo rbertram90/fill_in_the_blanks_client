@@ -26,7 +26,7 @@ RoundSubmissions.prototype.redraw = function (message, playerIsJudge) {
     }
     else {
         heading.innerText = t ('Player submissions');
-        subheading = helper.element( { tag:'p', text:t('Card czar is picking the winner'), class:'simple-grey-panel' });
+        subheading = helper.element({ tag:'p', text: t('Card czar is picking the winner'), class:'simple-grey-panel' });
     }
 
     this.parentElement.appendChild(heading);

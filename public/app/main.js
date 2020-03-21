@@ -20,6 +20,7 @@ function BlanksGame() {
     document.body.appendChild(this.parentElement);
 
     this.socket = null;
+    this.draggedCard = null;
 
     // Game variables
     this.player = null;
@@ -417,6 +418,7 @@ BlanksGame.prototype.loadAwaitGameStart = function() {
 
 BlanksGame.prototype.loadGameScreen = function(data) {
     var helper = new DOMHelper();
+    var game = window.BlanksGameInstance;
 
     var wrapper = helper.element({ tag:'div', id:'game_window' });
     var heading = helper.element({ tag:'h2', text:t('Choose your card(s)') });
@@ -448,24 +450,271 @@ BlanksGame.prototype.loadGameScreen = function(data) {
         setTimeout(tickTime, 1);
     }
 
+    // In play wrapper
+    var inPlay = helper.element({ tag:'div', id:'in_play' });
+    wrapper.appendChild(inPlay);
+
     // Question
     var blackCard = helper.element({ tag:'div', id:'question_card', html:data.questionCard.text })
-    wrapper.appendChild(blackCard);
+    inPlay.appendChild(blackCard);
 
-    // Answer cards
-    var playerCardsWrapper = helper.element({ tag:'div', id:'player_hand' });
+    var labels = [t('First card'), t('Second card'), t('Third card')];
 
-    this.components.playerDeck = new PlayerDeck(this, playerCardsWrapper);
-    this.components.playerDeck.redraw();
+    // Active placeholders
+    var activePlaceholdersRequired = game.currentQuestion.blanks;
+    for (var aph = 0; aph < activePlaceholdersRequired; aph++) {
+        var placeholder = helper.element({ tag:'div', class:'input-wrapper' });
+
+        var label = helper.element({ tag:'p', text:labels[aph] });
+        placeholder.appendChild(label);
+
+        var dropzone = helper.element({ tag:'div', class:'card-dropzone' });
+        placeholder.appendChild(dropzone);
+
+        dropzone.addEventListener("dragover", function (e) {
+            // this is called all the time the element is droppable on here
+            e.preventDefault();
+        });
+        dropzone.addEventListener("dragenter", function (e) {
+            if ($(this).find('p.card').length > 0) {
+                this.style.backgroundColor = "red";
+            }
+            else {
+                this.style.backgroundColor = "#666";
+                e.dataTransfer.dropEffect = "move";
+            }
+            e.preventDefault();
+        });
+        dropzone.addEventListener("dragleave", function (e) {
+            // console.log(e);
+            if ($(this).find('p.card').length > 0) {
+                this.style.backgroundColor = "green";
+            }
+            else {
+                this.style.backgroundColor = "transparent";
+            }
+            e.preventDefault();
+        });
+        dropzone.addEventListener("drop", function (e) {
+            var game = window.BlanksGameInstance;
+            if ($(this).find('p.card').length > 0) {
+            }
+            else {
+                this.append(game.draggedCard);
+                $(this.parentElement).find('button.edit-card').prop('disabled', false);
+                game.draggedCard = null;
+            }
+            this.style.backgroundColor = "green";
+        });
+
+        if (game.allowCustomText || game.allowImages) {
+            var editButton = helper.element({ tag:'button', text:t('Edit card'), class:'edit-card' });
+            editButton.setAttribute('disabled', 'disabled');
+
+            editButton.addEventListener('click', function (e) {
+                var card = $(this.parentElement).find('p.card');
+                var cardID = card.attr('id');
+                game.showEditCardModal(cardID);
+                e.preventDefault();
+            });
+
+            placeholder.appendChild(editButton);
+        }
+
+        inPlay.appendChild(placeholder);
+    }
+
+    // Inactive placeholders
+    // Hard coded 3 - max number of blanks in one card!
+    var placeholdersRequired = 3 - game.currentQuestion.blanks;
+    for (var ph = 0; ph < placeholdersRequired; ph++) {
+        var placeholder = helper.element({ tag:'div', class:'card-no-dropzone' });
+        inPlay.appendChild(placeholder);
+    }
 
     // Submit button
     var submitCardsButton = helper.element({ tag:'button', class:'big', text:t('Play card(s)') });
-    submitCardsButton.addEventListener('click', this.components.playerDeck.submitCards);
-    this.components.playerDeck.submitButton = submitCardsButton;
+    wrapper.appendChild(submitCardsButton);
 
-    playerCardsWrapper.appendChild(submitCardsButton);
+    // Answer cards
+    var playerCardsWrapper = helper.element({ tag:'div', id:'player_hand' });
+    this.components.playerDeck = new PlayerDeck(this, playerCardsWrapper);
+    this.components.playerDeck.submitButton = submitCardsButton;
+    submitCardsButton.addEventListener('click', this.components.playerDeck.submitCards);
+    this.components.playerDeck.redraw();
+
     wrapper.appendChild(playerCardsWrapper);
     this.parentElement.appendChild(wrapper);
+};
+
+BlanksGame.prototype.showEditCardModal = function (cardID) {
+
+    var card = $('#' + cardID);
+    if (!card.length == 1) {
+        console.error('Card not found!');
+        return;
+    }
+
+    if (card.find('.text').length > 0) {
+        var text = card.find('.text').html();
+        var image = card.find('img').attr('src');
+    }
+    else {
+        var text = card.html();
+        var image = '';
+    }
+
+    var helper = new DOMHelper();
+    var container = document.getElementById('card_edit_box');
+    if (container) {
+        container.style.display = 'block';
+    }
+    else {
+        container = helper.element({ tag:'div', id:'card_edit_box' });
+        document.body.appendChild(container);
+    }
+
+    $('body').css('overflow', 'hidden');
+    $('html').css('overflow', 'hidden');
+
+    var innerContainer = helper.element({ tag:'div', class:'container' });
+    container.appendChild(innerContainer);
+
+    var containerHeading = helper.element({ tag:'h2', text:t('Edit card') });
+    innerContainer.appendChild(containerHeading);
+
+    if (this.allowCustomText) {
+        // Custom text
+        var customCardWrapper = helper.element({ tag:'div', id:'custom_text_wrapper' });
+        var textBoxLabel = helper.element({ tag:'label', for:'custom_text_input', text:t('Text / Caption') });
+        var textBox = helper.element({ tag:'textarea', id:'custom_text_input', value:text });
+        
+        customCardWrapper.appendChild(textBoxLabel);
+        customCardWrapper.appendChild(textBox);
+        innerContainer.appendChild(customCardWrapper);
+    }
+    
+    if (this.allowImages) {    
+        // Image
+        var imageHeading = helper.element({ tag:'h3', text:t('Add an image') });
+        innerContainer.appendChild(imageHeading);
+
+        var customImageWrapper = helper.element({ tag:'div', id:'custom_image_wrapper' , class:'custom-image-wrapper' });
+        var imageSourceLabel = helper.element({ tag:'label', for:'custom_image_input', text:t('Image URL') });
+        customImageWrapper.appendChild(imageSourceLabel);
+    
+        var imageSource = helper.element({ tag:'input', type:'text', id:'custom_image_input', value:image });
+        imageSource.placeholder = 'http://example.com/image.jpg';
+        imageSource.style.width = '100%';
+        imageSource.addEventListener('keyup', function (e) {
+            $('#preview_image').attr('src', $(this).val());
+        });
+        customImageWrapper.appendChild(imageSource);
+
+        var previewImage = helper.element({ tag:'img', id:'preview_image', src: image });
+        customImageWrapper.appendChild(previewImage);
+        
+        if (config.giphy_api_key) {
+            var orText = helper.element({ tag:'p', text:t('- or -') });
+            customImageWrapper.appendChild(orText);
+
+            var paragraph = helper.element({ tag:'p', text:t('Enter your search text to search Giphy API for GIFs, click the image you want to use, this will replace the URL above.') });
+            customImageWrapper.appendChild(paragraph);
+
+            var giphyContainer = helper.element({ tag:'div', class:'giphy-search-box' });
+            customImageWrapper.appendChild(giphyContainer);
+
+            var giphyLogo = helper.element({ tag:'img', src:'/images/giphy_logo.png', alt:'GIPHY' });
+            giphyContainer.appendChild(giphyLogo);
+
+            var searchInputWrapper = helper.element({ tag:'div', class:'search-input-wrapper' });
+            giphyContainer.appendChild(searchInputWrapper);
+
+            var innerInput = helper.element({ tag:'input', type:'text', id:'giphy_search_text', placeholder:'Your search text' });
+            searchInputWrapper.appendChild(innerInput);
+
+            var innerButton = helper.element({ tag:'button', type:'button', id:'giphy_search_button', text:t('Search') });
+            innerButton.addEventListener('click', function(e) {
+                var searchTerm = encodeURIComponent(document.getElementById('giphy_search_text').value);
+                var xhr = $.get({
+                    url:"http://api.giphy.com/v1/gifs/search?q=" + searchTerm + "&api_key=" + config.giphy_api_key + "&limit=16",
+                    crossDomain: true
+                });
+                xhr.done(function(data) {
+                    var wrapper = document.getElementById('giphy_results');
+
+                    for(var i = 0; i < data.data.length; i++) {
+                        var item = data.data[i];
+                        var imageURL = item.images.fixed_width_downsampled.url;
+                        var selectableDiv = helper.element({ tag:'div', class:'giphy_selectable', data: {url:imageURL } });
+                        var giphyImage = helper.element({ tag:'img', src:imageURL, alt:item.title });
+                        selectableDiv.appendChild(giphyImage);
+                        wrapper.appendChild(selectableDiv);
+
+                        selectableDiv.addEventListener('click', function(e) {
+                            $('.giphy_selectable.active').removeClass('active');
+                            this.className = 'giphy_selectable active';
+                            $('#custom_image_input')
+                                .val($(this).find('img').attr('src'));
+
+                            var event = new Event('keyup');
+                            document.getElementById('custom_image_input').dispatchEvent(event);
+                        });
+                    }
+                });
+
+                e.preventDefault();
+            });
+            searchInputWrapper.appendChild(innerButton);
+
+            var resultsArea = helper.element({ tag:'div', id:'giphy_results' });
+            giphyContainer.appendChild(resultsArea);
+        }
+    
+        innerContainer.appendChild(customImageWrapper);
+    }
+
+    var actionsWrapper = helper.element({ tag:'div', class:'actions' });
+    innerContainer.appendChild(actionsWrapper);
+
+    var closeWindow = function() {
+        var container = document.getElementById('card_edit_box');
+        container.innerHTML = '';
+        container.style.display = 'none';
+        $('body').css('overflow', 'visible');
+        $('html').css('overflow', 'visible');
+    };
+
+    var submitButton = helper.element({ tag:'button', type:'button', id:'edit_save', text:t('Save') });
+    actionsWrapper.appendChild(submitButton);
+    submitButton.addEventListener('click', function(e) {
+        var imageUrl = false;
+        if (document.getElementById('custom_image_input')) {
+            imageUrl = document.getElementById('custom_image_input').value;
+        }
+        var imageCaption = false;
+        if (document.getElementById('custom_text_input')) {
+            imageCaption = document.getElementById('custom_text_input').value;
+        }
+        else {
+            imageCaption = text;
+        }
+
+        var newCardContent = '';
+        if (imageUrl) {
+            newCardContent += '<a href="' + imageUrl + '" target="_blank"><img src="' + imageUrl + '" alt="Image not valid" style="max-width:100%; max-height:90%"></a><br><small>' + t('Click to view full size') + '</small>';
+        }
+        if (imageCaption) {
+            newCardContent += '<div class="text">' + imageCaption + '</div>';
+        }
+
+        document.getElementById(cardID).innerHTML = newCardContent;
+        closeWindow();
+    });
+
+    var closeButton = helper.element({ tag:'button', type:'button', id:'edit_close', text:t('Discard') });
+    actionsWrapper.appendChild(closeButton);
+    closeButton.addEventListener('click', closeWindow);
 };
 
 BlanksGame.prototype.loadJudgeWaitingScreen = function(data) {

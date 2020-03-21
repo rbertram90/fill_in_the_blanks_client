@@ -1,0 +1,107 @@
+#card_edit_box {
+    position: fixed;
+    top: 0;
+    left: 0;
+    height: calc(100% - 80px);
+    width: calc(100% - 80px);
+    background-color: #fff;
+    z-index: 100;
+    overflow: auto;
+    margin: 40px;
+    border: 4px solid #21007F;
+    box-shadow: 0 0 500px #21007F;
+    padding: 20px;
+    box-sizing: border-box;
+}
+#card_edit_box .container {
+    max-width: 800px;
+    margin: 0 auto;
+}
+
+#giphy_results img {
+    max-height: 150px;
+}
+.giphy_selectable {
+    display: inline-block;
+    cursor: pointer;
+}
+.giphy_selectable.active {
+    border: 4px solid #21007F;
+}
+#giphy_results {
+    max-height: 300px;
+    overflow: auto;
+}
+
+#custom_text_wrapper label,
+#custom_image_wrapper label {
+    display: block;
+    margin-bottom: 10px;
+}
+
+#custom_text_wrapper textarea {
+    width: 100%;
+    resize: vertical;
+    font-size: 18px;
+    padding: 10px;
+    font-family: sans-serif;
+}
+#custom_image_input, #giphy_search_text {
+    font-size: 18px;
+    padding: 10px;
+}
+
+#card_edit_box .giphy-search-box {
+    background-color: #121119;
+    padding-bottom: 1px;
+}
+#card_edit_box .search-input-wrapper {
+    border-top: 1px solid grey;
+    padding: 10px;
+    display: flex;
+    align-content: stretch;
+}
+#card_edit_box #giphy_search_text {
+    flex: 2;
+    border: 0;
+}
+#card_edit_box #giphy_search_button {
+    flex: 1;
+}
+#card_edit_box #giphy_results {
+    background-color: #ccc;
+    margin: 10px;
+    margin-top: 0;
+}
+
+#card_edit_box .actions {
+    display: flex;
+    align-content: stretch;
+}
+#card_edit_box #edit_save, #card_edit_box #edit_close {
+    flex: 1;
+    font-size: 18px;
+    padding: 10px 0;
+    margin: 20px 0;
+}
+#card_edit_box #edit_save {
+    border-top-left-radius: 10px;
+    border-bottom-left-radius: 10px;
+    border-top-right-radius: 0;
+    border-bottom-right-radius: 0;
+}
+#card_edit_box #edit_close {
+    border-top-left-radius: 0;
+    border-bottom-left-radius: 0;
+    border-top-right-radius: 10px;
+    border-bottom-right-radius: 10px;
+    background-color: rgb(186, 181, 255);
+}
+#card_edit_box #edit_close:hover {
+    background-color: rgb(142, 137, 212);
+}
+#card_edit_box #preview_image {
+    max-width: 400px;
+    max-height: 200px;
+    margin-top: 10px;
+}

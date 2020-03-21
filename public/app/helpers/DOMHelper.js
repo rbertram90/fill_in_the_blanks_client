@@ -21,6 +21,7 @@ DOMHelper.prototype.element = function (data) {
     if (data.id) element.id = data.id;
 
     if (data.src) element.src = data.src;
+    if (data.alt) element.alt = data.alt;
     if (data.for) element.setAttribute('for', data.for);
     if (data.name) element.name = data.name;
     if (data.type) element.type = data.type;

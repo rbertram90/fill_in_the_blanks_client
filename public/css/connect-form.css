@@ -108,9 +108,14 @@
     cursor: pointer;
     -webkit-filter: grayscale(100%); /* Safari 6.0 - 9.0 */
     filter: grayscale(100%);
+    /*transition: filter .3s;*/
 }
 #connect_form #field_icon img.selected {
     border-color: blue;
+    -webkit-filter: grayscale(0%); /* Safari 6.0 - 9.0 */
+    filter: grayscale(0%);
+}
+#connect_form #field_icon img:hover {
     -webkit-filter: grayscale(0%); /* Safari 6.0 - 9.0 */
     filter: grayscale(0%);
 }

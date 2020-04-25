@@ -199,6 +199,21 @@ BlanksGame.prototype.loadConnectForm = function() {
         username = 'player' + Date.now().toString().substr(-4);
         remember_me = false;
     }
+
+    // Check if the host/port has been provided in URL
+    if (window.location.search) {
+        var searchParts = window.location.search.substring(1).split('&');
+        for (var p = 0; p < searchParts.length; p++) {
+            var varParts = searchParts[p].split('=');
+            if (varParts[0] == 'host') {
+                host = varParts[1];
+            }
+            if (varParts[0] == 'port') {
+                port = varParts[1];
+            }
+        }
+    }
+
     if (!default_icon) {
         default_icon = Math.floor(Math.random() * 20) + 1;
     }

@@ -2,13 +2,16 @@
     position: fixed;
     top: 0;
     left: 0;
+    right: 0;
     height: calc(100% - 80px);
     width: calc(100% - 80px);
-    background-color: #fff;
+    max-width: 1000px;
+    background-color: rgba(255,255,255,1);
     z-index: 100;
     overflow: auto;
-    margin: 40px;
+    margin: 40px auto;
     border: 4px solid #21007F;
+    border-radius: 10px;
     box-shadow: 0 0 500px #21007F;
     padding: 20px;
     box-sizing: border-box;

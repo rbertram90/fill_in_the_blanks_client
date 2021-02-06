@@ -34,5 +34,28 @@ DOMHelper.prototype.element = function (data) {
         });
     }
 
+    if (data.parent) {
+        data.parent.appendChild(element);
+    }
+
     return element;
+};
+
+// Shortcuts
+
+DOMHelper.prototype.label = function (data) {
+    data.tag = 'label';
+    return this.element(data);
+};
+
+DOMHelper.prototype.dropdown = function (data) {
+    data.tag = 'select';
+    var elem = this.element(data);
+
+    for (var i=0; i<data.options.length; i++) {
+        var option = this.element({ tag:'option', text:data.options[i], value:i });
+        elem.appendChild(option);
+    }
+
+    return elem;
 };

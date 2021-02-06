@@ -25,6 +25,9 @@
     font-weight: bold;
     display: block;
     margin-bottom: 8px;
+    text-transform: uppercase;
+    font-size: 12px;
+    font-weight: normal;
 }
 #connect_form input[type=text] {
     border: 1px solid #ccc;
@@ -34,6 +37,10 @@
     font-size: 18px;
     font-family: 'Source Sans Pro', Arial, sans-serif;
     width: 100%;
+    transition: border-color .4s;
+}
+#connect_form input[type=text]:focus {
+    border-color: #21007F;
 }
 #connect_form #field_host {
     width: 60%;
@@ -99,6 +106,7 @@
     margin-right: 10%;
     margin-left: 10%;
     padding: 20px;
+    margin-top: 20px;
 }
 #connect_form #field_icon img {
     width: 76px;
@@ -111,7 +119,7 @@
     /*transition: filter .3s;*/
 }
 #connect_form #field_icon img.selected {
-    border-color: blue;
+    border-color: #21007F;
     -webkit-filter: grayscale(0%); /* Safari 6.0 - 9.0 */
     filter: grayscale(0%);
 }

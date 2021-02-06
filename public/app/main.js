@@ -56,7 +56,7 @@ BlanksGame.prototype.handleMessage = function(e) {
             switch (data.game_status) {
                 // Awaiting game start
                 case 0:
-                    if (data.judge == null || data.judge.username == username) {
+                    if (data.judge.username == username) {
                         // Show configure game options screen
                         game.configForm = game.loadConfigForm();
                     }
@@ -326,56 +326,33 @@ BlanksGame.prototype.loadConfigForm = function() {
     var helper = new DOMHelper();
 
     // Wrapper
-    var wrapper = helper.element({ tag: 'div', id: 'game_config_form' });
-    var optionsWrapper = helper.element({ tag: 'div', id: 'game_options' });
-    wrapper.appendChild(optionsWrapper);
+    var wrapper = helper.element({ tag:'div', id:'game_config_form', parent:this.parentElement });
+    var optionsWrapper = helper.element({ tag:'div', id:'game_options', parent:wrapper });
 
-    // Heading
-    var heading = helper.element({ tag: 'h2', text: t('Configure game') });
-    optionsWrapper.appendChild(heading);
+    // Title
+    helper.element({ tag:'h2', text:t('Configure game'), parent:optionsWrapper });
 
     // What's the winning score?
-    var winScoreWrapper = helper.element({ tag: 'div' });
-    var winScoreLabel = helper.element({ tag: 'label', for: 'winning_score', text: t('Winning score') });
-    var winScoreSelect = helper.element({ tag: 'select', id: 'winning_score' });
-    for (var i = 3; i < 11; i++) {
-        var option = helper.element({ tag: 'option', text: i, value: i });
-        winScoreSelect.appendChild(option);
-    }
-    winScoreWrapper.appendChild(winScoreLabel);
-    winScoreWrapper.appendChild(winScoreSelect);
-    optionsWrapper.appendChild(winScoreWrapper);
+    var winScoreWrapper = helper.element({ tag:'div', parent:optionsWrapper });
+    helper.element({ tag:'label', for:'winning_score', text:t('Winning score'), parent:winScoreWrapper });
+    var winScoreSelect = helper.dropdown({ id:'winning_score', options:[3,4,5,6,7,8,9,10], parent:winScoreWrapper });
 
     // What's the maximum time each round can last?
-    var maxTimeWrapper = helper.element({ tag:'div' });
-    var maxTimeLabel = helper.element({ tag:'label', text:t('Maximum turn time'), for:'max_time' });
-    var maxTimeSelect = helper.element({ tag:'select', id:'max_time' });
-    var maxTimeOptions = ['Infinite', '0:30', '1:00', '1:30', '2:00', '3:00', '5:00']; // this link to startGame function
-    for (var i = 0; i < maxTimeOptions.length; i++) {
-        var option = helper.element({ tag:'option', text:maxTimeOptions[i], value:i });
-        maxTimeSelect.appendChild(option);
-    }
-    winScoreWrapper.appendChild(maxTimeLabel);
-    winScoreWrapper.appendChild(maxTimeSelect);
-    optionsWrapper.appendChild(maxTimeWrapper);
+    var maxTimeWrapper = helper.element({ tag:'div', parent:optionsWrapper });
+    helper.element({ tag:'label', text:t('Maximum turn time'), for:'max_time', parent:maxTimeWrapper });
+    var maxTimeSelect = helper.dropdown({ id:'max_time', options:['Infinite','0:30','1:00','1:30','2:00','3:00','5:00'], parent:maxTimeWrapper });
+    // these options match those in startGame function
+    // @todo can we safely translate 'infinite' without the game breaking?
 
     // Enable custom text
-    var typeWrapper = helper.element({ tag: 'div' });
-    var allowCustomTextLabel = helper.element({ tag: 'label', text: 'Allow custom text', for: 'allow_custom_text' });
-    var allowCustomTextCheck = helper.element({ tag: 'input', type: 'checkbox', id: 'allow_custom_text' });
+    var typeWrapper = helper.element({ tag:'div', parent:optionsWrapper });
+    helper.label({ text:t('Allow custom text'), for:'allow_custom_text', parent:typeWrapper });
+    var allowCustomTextCheck = helper.element({ tag:'input', type:'checkbox', id:'allow_custom_text', parent:typeWrapper });
     allowCustomTextCheck.setAttribute('checked', 'checked');
 
-    typeWrapper.appendChild(allowCustomTextLabel);
-    typeWrapper.appendChild(allowCustomTextCheck);
-    optionsWrapper.appendChild(typeWrapper);
-
     // Enable images
-    var allowImagesLabel = helper.element({ tag: 'label', text: 'Allow images', for: 'allow_images' });
-    var allowImagesCheck = helper.element({ tag: 'input', type: 'checkbox', id: 'allow_images' });
-
-    typeWrapper.appendChild(allowImagesLabel);
-    typeWrapper.appendChild(allowImagesCheck);
-    optionsWrapper.appendChild(typeWrapper);
+    helper.label({ text:t('Allow images'), for:'allow_images', parent:typeWrapper });
+    var allowImagesCheck = helper.element({ tag:'input', type:'checkbox', id:'allow_images', parent:typeWrapper });
     
     // Finish button
     var submitButton = document.createElement('button');
@@ -391,8 +368,7 @@ BlanksGame.prototype.loadConfigForm = function() {
     this.components.playerList.redraw();
     wrapper.appendChild(connectedUsers);
 
-    this.parentElement.appendChild(wrapper);
-
+    // Return the field elements
     return {
         maxTime: maxTimeSelect,
         winningScore: winScoreSelect,

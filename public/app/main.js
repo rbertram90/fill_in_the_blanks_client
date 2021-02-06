@@ -56,7 +56,7 @@ BlanksGame.prototype.handleMessage = function(e) {
             switch (data.game_status) {
                 // Awaiting game start
                 case 0:
-                    if (data.judge.username == username) {
+                    if (data.player_is_host) {
                         // Show configure game options screen
                         game.configForm = game.loadConfigForm();
                     }

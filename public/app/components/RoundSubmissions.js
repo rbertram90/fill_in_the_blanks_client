@@ -151,7 +151,7 @@ RoundSubmissions.prototype.pickWinner = function (event) {
     var winningCard = document.querySelector('#' + roundSubmissions.parentElement.id + " .selectable-wrapper.active");
 
     if (!winningCard) {
-        document.getElementById('pick_errors').innerHTML = '<p class="error">' + t('Please select the winning card') + '</p>';
+        document.getElementById('pick_errors').innerHTML = '<p class="error">' + t('Please choose the winning card') + '</p>';
         // game.components.messagePanel.showMessage(t('Please select a card'), 'error');
         return;
     }

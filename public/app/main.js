@@ -146,7 +146,7 @@ BlanksGame.prototype.handleMessage = function(e) {
             game.parentElement.appendChild(connectedUsers);
 
             var nextRoundWarning = document.createElement('span');
-            nextRoundWarning.innerText = t('next round starting in [time] seconds');
+            nextRoundWarning.innerText = t('Next round starting in [time] seconds');
             nextRoundWarning.innerText = nextRoundWarning.innerText.replace('[time]', '10');
             winnerHeading.appendChild(nextRoundWarning);
             
@@ -154,9 +154,9 @@ BlanksGame.prototype.handleMessage = function(e) {
 
             var refreshNextRound = function() {
                 timeToNextRound--;
-                var newText = t('next round starting in [time] seconds');
+                var newText = t('Next round starting in [time] seconds');
                 newText = newText.replace('[time]', timeToNextRound);
-                nextRoundWarning.innerText = t(newText);
+                nextRoundWarning.innerText = newText;
 
                 if (timeToNextRound > 0) {
                     window.setTimeout(refreshNextRound, 1000);
@@ -246,7 +246,7 @@ BlanksGame.prototype.loadConnectForm = function() {
     // Host
     var hostWrapper = helper.element({ tag:'div', class:'field', id:'field_host' });
     connectForm.appendChild(hostWrapper);
-    var hostLabel = helper.element({ tag:'label', for:'connect_host', text: t('Host') });
+    var hostLabel = helper.element({ tag:'label', for:'connect_host', text: t('Host server') });
     hostWrapper.appendChild(hostLabel);
     var hostField = helper.element({ tag:'input', type: 'text', id:'connect_host', value: host });
     hostField.setAttribute('required', 'required');
@@ -496,7 +496,7 @@ BlanksGame.prototype.loadGameScreen = function(data) {
             var seconds = (roundEnd - nowSeconds);
             var minutes = Math.floor(seconds / 60);
             seconds = seconds - (minutes*60);
-            elem.innerText = t('Time remaining: ') + minutes + ':' + ('00' + seconds).slice(-2);
+            elem.innerText = t('Time remaining:') + ' ' + minutes + ':' + ('00' + seconds).slice(-2);
             
             if (minutes <= 0 && seconds <= 0) return;
             setTimeout(tickTime, 1000);
@@ -668,7 +668,7 @@ BlanksGame.prototype.showEditCardModal = function (cardID) {
             var searchInputWrapper = helper.element({ tag:'div', class:'search-input-wrapper' });
             giphyContainer.appendChild(searchInputWrapper);
 
-            var innerInput = helper.element({ tag:'input', type:'text', id:'giphy_search_text', placeholder:'Your search text' });
+            var innerInput = helper.element({ tag:'input', type:'text', id:'giphy_search_text', placeholder:t('Your search text') });
             searchInputWrapper.appendChild(innerInput);
 
             var innerButton = helper.element({ tag:'button', type:'button', id:'giphy_search_button', text:t('Search') });
@@ -782,7 +782,7 @@ BlanksGame.prototype.loadJudgeWaitingScreen = function(data) {
             var seconds = (roundEnd - nowSeconds);
             var minutes = Math.floor(seconds / 60);
             seconds = seconds - (minutes*60);
-            elem.innerText = t('Time remaining: ') + minutes + ':' + ('00' + seconds).slice(-2);
+            elem.innerText = t('Time remaining:') + ' ' + minutes + ':' + ('00' + seconds).slice(-2);
             
             if (minutes == 0 && seconds == 0) {
                 window.BlanksGameInstance.socket.send('{ "action": "round_expired" }');

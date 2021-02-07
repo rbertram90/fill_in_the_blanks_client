@@ -18,6 +18,13 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta http-equiv="X-UA-Compatible" content="ie=edge">
     <title>Fill in the Blanks game client</title>
+    <meta name="description" content="An open source browser card game, based on Cards Against Humanity with a twist.">
+
+    <meta property="og:title" content="Fill in the Blanks">
+    <meta property="og:description" content="An open source browser card game, based on Cards Against Humanity with a twist.">
+    <meta property="og:image" content="http://fillintheblanks.rbwebdesigns.co.uk/images/banner.png">
+    <meta name="twitter:card" content="summary_large_image">
+
     <link rel="stylesheet" type="text/css" href="/css/game.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/3.7.0/animate.min.css">
     <link href="https://fonts.googleapis.com/css?family=Source+Sans+Pro" rel="stylesheet">

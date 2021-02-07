@@ -58,7 +58,7 @@ BlanksGame.prototype.handleMessage = function(e) {
                 case 0:
                     if (data.player_is_host) {
                         // Show configure game options screen
-                        game.configForm = game.loadConfigForm();
+                        game.configForm = game.loadConfigForm(data);
                     }
                     else {
                         // Show awaiting game start screen
@@ -82,6 +82,14 @@ BlanksGame.prototype.handleMessage = function(e) {
             // If they are game host then enable buttons
             if (data.host) {
                 game.clientIsGameHost = true;
+            }
+            break;
+
+        case 'start_game_fail':
+            switch (data.errorType) {
+                case 'more_players_needed':
+                    document.getElementById('start_game_errors').innerHTML = '<p class="error message">' + t('Not enough players to start game') + '</p>';
+                    break;
             }
             break;
 
@@ -322,7 +330,7 @@ BlanksGame.prototype.loadConnectForm = function() {
     };
 };
 
-BlanksGame.prototype.loadConfigForm = function() {
+BlanksGame.prototype.loadConfigForm = function(data) {
     var helper = new DOMHelper();
 
     // Wrapper
@@ -331,6 +339,9 @@ BlanksGame.prototype.loadConfigForm = function() {
 
     // Title
     helper.element({ tag:'h2', text:t('Configure game'), parent:optionsWrapper });
+
+    // Status message holder
+    helper.element({ tag:'div', id:'start_game_errors', parent:optionsWrapper });
 
     // What's the winning score?
     var winScoreWrapper = helper.element({ tag:'div', parent:optionsWrapper });

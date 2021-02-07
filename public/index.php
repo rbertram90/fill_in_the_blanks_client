@@ -23,9 +23,17 @@
 </header>
 <main>
     <section>
-        <h2>Client</h2>
+        <h2>Game client</h2>
         <p>The latest version of the client is available for public use at <a href="http://fillintheblanks.rbwebdesigns.co.uk/game.php">fillintheblanks.rbwebdesigns.co.uk/game.php</a> however it's down to individuals to host game servers, as described below.</p>
         <a href="/game.php" class="big-button">Play now</a>
+    </section>
+    <section>
+        <h2>Screenshots</h2>
+        <div id="gallery">
+            <a href="/images/screenshots/choosing.jpg" target="_blank"><img src="/images/screenshots/choosing.jpg" title="Choosing a card" alt="Game screenshot - choosing a card"></a>
+            <a href="/images/screenshots/edit.jpg" target="_blank"><img src="/images/screenshots/edit.jpg" title="Editing a card" alt="Game screenshot - editing a card"></a>
+            <a href="/images/screenshots/judge.jpg" target="_blank"><img src="/images/screenshots/judge.jpg" title="Round results" alt="Game screenshot - round results"></a>
+        </div>
     </section>
     <section>
         <h2>Updates</h2>
@@ -50,6 +58,9 @@
             <li><a href="https://github.com/rbertram90/fill_in_the_blanks_client" target="_blank">Client</a></li>
         </ul>
         <p>Feel free to open a ticket for a feature request/ bug report, if you know PHP/Javascript and want to get your hands dirty, i'm open to pull requests.</p>
+
+        <h3>Credits</h3>
+        <p>Logo font - <a href="https://www.dafont.com/karmatic-arcade.font" target="_blank">Karmatic Arcade on dafont.com</a></p>
     </section>
     <section>
         <h2>Server</h2>

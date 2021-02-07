@@ -10,11 +10,18 @@ body {
     background-image: linear-gradient(#444 30%, #21007F);
     margin: 0 30px 30px 30px;
 }
+
 header {
     padding: 30px;
 }
 header p {
     color: #aaa;
+}
+
+body > main,
+body > header {
+    max-width: 1200px;
+    margin: 0 auto;
 }
 
 section {
@@ -47,6 +54,24 @@ p {
 section > h2:first-child {
     margin-top: 0;
     padding-top: 0;
+}
+
+#gallery {
+    display: flex;
+}
+#gallery a {
+    width: 32%;
+    margin-left: 2%;
+    display: block;
+}
+#gallery a:first-child {
+    margin-left: 0;
+}
+#gallery img {
+    width: auto;
+    border: 5px solid #21007F;
+    box-sizing: border-box;
+    width: 100%;
 }
 
 code {

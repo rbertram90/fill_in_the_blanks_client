@@ -28,8 +28,13 @@ function BlanksGame() {
     this.clientIsGameHost = false;
 
     this.currentQuestion = {};
+
     this.winningScore = 5; // default
+    this.winingScoreOptions = [3,4,5,6,7,8,9,10];
+
     this.maxTime = 120000; // default - 2 minutes
+    this.maxTimeOptions = [0,30000,60000,90000,120000,180000,300000];
+
     this.allowCustomText = true;
     this.allowImages = false;
 
@@ -891,12 +896,8 @@ BlanksGame.prototype.startGame = function(event) {
     var game = window.BlanksGameInstance;
     if (!game.clientIsGameHost) return;
 
-    game.winningScore = game.configForm.winningScore.value;
-
-    var maxTimeOptions = [0, 30000, 60000, 90000, 120000, 180000, 300000];
-    game.maxTime = maxTimeOptions[game.configForm.maxTime.value];
-    if (typeof game.maxTime == 'undefined') game.maxTime = 0;
-
+    game.winningScore = game.winingScoreOptions[game.configForm.winningScore.selectedIndex];
+    game.maxTime = game.maxTimeOptions[game.configForm.maxTime.selectedIndex];
     game.allowCustomText = game.configForm.allowCustomText.checked;
     game.allowImages = game.configForm.allowImages.checked;
 

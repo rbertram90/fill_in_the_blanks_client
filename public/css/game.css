@@ -55,6 +55,7 @@ body > header {
 
 #game_options {
     width: 100%;
+    margin: 0 20px;
 }
 #game_options label {
     font-weight: bold;
@@ -63,6 +64,14 @@ body > header {
 }
 #game_options select {
     margin-bottom: 20px;
+}
+#game_options .card-pack-selection {
+    margin-top: 20px;
+    margin-bottom: 20px;
+}
+#game_options .card-pack-selection label {
+    font-weight: normal;
+    display: inline-block;
 }
 #connected_users {
     width: 100%;

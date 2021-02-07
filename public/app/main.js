@@ -370,6 +370,20 @@ BlanksGame.prototype.loadConfigForm = function(data) {
     helper.label({ text:t('Allow images'), for:'allow_images', parent:typeWrapper });
     var allowImagesCheck = helper.element({ tag:'input', type:'checkbox', id:'allow_images', parent:typeWrapper });
     
+    var packsWrapper = helper.element({ tag:'div', class:'card-pack-selection', parent:optionsWrapper });
+    helper.element({ tag:'h3', text:t('Select card pack(s)'), parent:packsWrapper });
+    var cardPacksCheckboxes = [];
+
+    if (data.card_packs.length) {
+        for (var p = 0; p < data.card_packs.length; p++) {
+            var packId = data.card_packs[p];
+            var packName = packId.replace(/_/g, ' ');
+            var packWrapper = helper.element({ tag:'div', class:'card-pack', parent:packsWrapper });
+            cardPacksCheckboxes.push(helper.element({ tag:'input', type:'checkbox', name:'card_packs', id:'card_packs_' + packId, parent:packWrapper }));
+            helper.element({ tag:'label', for:'card_packs_' + packId, text:packName, parent:packWrapper })
+        }
+    }
+
     // Finish button
     var submitButton = document.createElement('button');
     submitButton.setAttribute('type', 'button');
@@ -384,13 +398,48 @@ BlanksGame.prototype.loadConfigForm = function(data) {
     this.components.playerList.redraw();
     wrapper.appendChild(connectedUsers);
 
-    // Return the field elements
+    // Return the field elements, which sets game.configForm variable
     return {
         maxTime: maxTimeSelect,
         winningScore: winScoreSelect,
         allowCustomText: allowCustomTextCheck,
-        allowImages: allowImagesCheck
+        allowImages: allowImagesCheck,
+        cardPacks: cardPacksCheckboxes
     };
+};
+
+/**
+ * Click handler for the start game button
+ */
+BlanksGame.prototype.startGame = function(event) {
+    var game = window.BlanksGameInstance;
+    if (!game.clientIsGameHost) return;
+
+    game.winningScore = game.winingScoreOptions[game.configForm.winningScore.selectedIndex];
+    game.maxTime = game.maxTimeOptions[game.configForm.maxTime.selectedIndex];
+    game.allowCustomText = game.configForm.allowCustomText.checked;
+    game.allowImages = game.configForm.allowImages.checked;
+    var cardPacks = [];
+
+    for (var p = 0; p < game.configForm.cardPacks.length; p++) {
+        var cardPack = game.configForm.cardPacks[p];
+        if (cardPack.checked) {
+            var packId = cardPack.id.replace('card_packs_', '');
+            cardPacks.push(packId);
+        }
+    }
+
+    if (cardPacks.length === 0) {
+        document.getElementById('start_game_errors').innerHTML = '<p class="error message">' + t('Please select at least 1 card pack') + '</p>';
+        return;
+    }
+
+    cardPacks = JSON.stringify(cardPacks);
+
+    game.socket.send('{ "action": "start_game", "winningScore": "' + game.winningScore + '", "maxRoundTime": "' + game.maxTime + '", "allowCustomText": ' + game.allowCustomText + ', "allowImages": ' + game.allowImages + ', "cardPacks": ' + cardPacks + ' }');
+
+    // game.startGameButton.disabled = true;
+    event.preventDefault();
 };
 
 BlanksGame.prototype.loadAwaitGameStart = function() {
@@ -887,24 +936,6 @@ BlanksGame.prototype.createServerConnection = function () {
         //    type: 'server_disconnected'
         // });
     };
-};
-
-/**
- * Click handler for the start game button
- */
-BlanksGame.prototype.startGame = function(event) {
-    var game = window.BlanksGameInstance;
-    if (!game.clientIsGameHost) return;
-
-    game.winningScore = game.winingScoreOptions[game.configForm.winningScore.selectedIndex];
-    game.maxTime = game.maxTimeOptions[game.configForm.maxTime.selectedIndex];
-    game.allowCustomText = game.configForm.allowCustomText.checked;
-    game.allowImages = game.configForm.allowImages.checked;
-
-    game.socket.send('{ "action": "start_game", "winningScore": "' + game.winningScore + '", "maxRoundTime": "' + game.maxTime + '", "allowCustomText": ' + game.allowCustomText + ', "allowImages": ' + game.allowImages + ' }');
-
-    // game.startGameButton.disabled = true;
-    event.preventDefault();
 };
 
 /**

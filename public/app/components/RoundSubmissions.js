@@ -75,31 +75,24 @@ RoundSubmissions.prototype.redraw = function (message, playerIsJudge) {
 
         for (var d = 0; d < playerCards.length; d++) {
             var card = playerCards[d];
-            var cardElement = document.createElement('p');
-            cardElement.className = 'card';
-            // use the ID of first card as we only need it for identifying who has won the round
-            // cardElement.id = 'played_card' + playerCards[0].id;
-            // cardElement.dataset.id = playerCards[0].id;
-            cardElement.innerHTML = card.text;
-
-            selectableWrapper.appendChild(cardElement);
+            helper.element({ tag:'p', class:'card', html:card.text, parent:selectableWrapper });
         }
 
         if (playerIsJudge) {
             selectableWrapper.addEventListener('click', this.highlightWinner);
         }
     
-        // formElement.appendChild(cardElement);
         submissionsWrapper.appendChild(selectableWrapper);
     }
 
     if (playerIsJudge) {
-        var pickWinnerButton = document.createElement('button');
-        pickWinnerButton.id = 'pick_winner';
-        pickWinnerButton.innerText = t('Confirm selection');
-        pickWinnerButton.addEventListener('click', this.pickWinner);
-        this.parentElement.appendChild(pickWinnerButton);
-        this.pickWinnerButton = pickWinnerButton;
+        this.pickWinnerButton = helper.element({ tag:'button', id:'pick_winner', text:t('Confirm selection'), parent:this.parentElement });
+        this.pickWinnerButton.addEventListener('click', this.pickWinner);
+    }
+
+    if (this.game.clientIsGameHost) {
+        var forceNextRoundButton = helper.element({ tag:'button', id:'force_next_round', text:t('Force decision (player is AFK)'), parent:this.parentElement });
+        forceNextRoundButton.addEventListener('click', this.triggerNextRound);
     }
 
     // Draw player list
@@ -152,4 +145,13 @@ RoundSubmissions.prototype.pickWinner = function (event) {
     }
 
     game.socket.send('{ "action": "winner_picked", "card": ' + winningCard.dataset.cardIndex + ' }');
+};
+
+/**
+ * In case that someone has gone AFK
+ */
+RoundSubmissions.prototype.triggerNextRound = function (event) {
+    var game = window.BlanksGameInstance;
+    game.socket.send('{ "action": "force_decision" }');
+    event.preventDefault();
 };

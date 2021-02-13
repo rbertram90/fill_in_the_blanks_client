@@ -110,7 +110,7 @@ BlanksGame.prototype.handleMessage = function(e) {
             game.allowCustomText = data.allowCustomText;
             game.allowImages = data.allowImages;
             game.parentElement.innerHTML = '';
-            game.currentJudge = data.currentJudge.username;
+            game.currentJudge = data.currentJudge ? data.currentJudge.username : null;
             game.currentQuestion = data.questionCard;
             game.currentQuestion.blanks = (game.currentQuestion.text.match(/____/g) || []).length;
 
@@ -124,7 +124,17 @@ BlanksGame.prototype.handleMessage = function(e) {
 
         case 'round_judge':
             game.parentElement.innerHTML = '';
-            game.loadJudgeScreen(data, (game.currentJudge == game.player.username));
+            if (data.judgeMode == 1) { // GAME_JM_COMMITTEE
+                var playerIsJudge = true; // Everyone's a judge
+            }
+            else {
+                var playerIsJudge = game.currentJudge == game.player.username
+            }
+            game.loadJudgeScreen(data, playerIsJudge);
+            break;
+
+        case 'player_judged':
+            game.components.playerList.triggerRedraw(data);
             break;
 
         case 'round_winner':
@@ -139,11 +149,11 @@ BlanksGame.prototype.handleMessage = function(e) {
             winnerHeading.innerHTML = '<strong>' + data.winner.username + '</strong> ' + t('is the round winner') + ': ';
             game.parentElement.appendChild(winnerHeading);
 
-            var connectedUsers = document.createElement('div');
-            connectedUsers.id = 'connected_users';
-            game.components.playerList = new PlayerList(this, connectedUsers);
-            // game.components.playerList.redraw(); // this will happen when components refreshed
-            game.parentElement.appendChild(connectedUsers);
+            // var connectedUsers = document.createElement('div');
+            // connectedUsers.id = 'connected_users';
+            // game.components.playerList = new PlayerList(this, connectedUsers);
+            game.components.playerList.redraw(); // this will happen when components refreshed
+            // game.parentElement.appendChild(connectedUsers);
 
             var nextRoundWarning = document.createElement('span');
             nextRoundWarning.innerText = t('Next round starting in [time] seconds');
@@ -370,6 +380,11 @@ BlanksGame.prototype.loadConfigForm = function(data) {
     helper.label({ text:t('Allow images'), for:'allow_images', parent:typeWrapper });
     var allowImagesCheck = helper.element({ tag:'input', type:'checkbox', id:'allow_images', parent:typeWrapper });
     
+    // Switch to 'committee mode'
+    helper.label({ text:t('Judging mode'), for:'judging_mode', parent:typeWrapper });
+    var judgingMode = helper.dropdown({ name:'judging_mode', id:'judging_mode', options:['Normal mode', 'Committee vote mode'], parent:typeWrapper });
+
+    // Choose card packs
     var packsWrapper = helper.element({ tag:'div', class:'card-pack-selection', parent:optionsWrapper });
     helper.element({ tag:'h3', text:t('Select card pack(s)'), parent:packsWrapper });
     var cardPacksCheckboxes = [];
@@ -404,7 +419,8 @@ BlanksGame.prototype.loadConfigForm = function(data) {
         winningScore: winScoreSelect,
         allowCustomText: allowCustomTextCheck,
         allowImages: allowImagesCheck,
-        cardPacks: cardPacksCheckboxes
+        cardPacks: cardPacksCheckboxes,
+        judgingMode: judgingMode
     };
 };
 
@@ -419,6 +435,7 @@ BlanksGame.prototype.startGame = function(event) {
     game.maxTime = game.maxTimeOptions[game.configForm.maxTime.selectedIndex];
     game.allowCustomText = game.configForm.allowCustomText.checked;
     game.allowImages = game.configForm.allowImages.checked;
+    game.judgingMode = game.configForm.judgingMode.selectedIndex;
     var cardPacks = [];
 
     for (var p = 0; p < game.configForm.cardPacks.length; p++) {
@@ -436,7 +453,7 @@ BlanksGame.prototype.startGame = function(event) {
 
     cardPacks = JSON.stringify(cardPacks);
 
-    game.socket.send('{ "action": "start_game", "winningScore": "' + game.winningScore + '", "maxRoundTime": "' + game.maxTime + '", "allowCustomText": ' + game.allowCustomText + ', "allowImages": ' + game.allowImages + ', "cardPacks": ' + cardPacks + ' }');
+    game.socket.send('{ "action": "start_game", "winningScore": "' + game.winningScore + '", "maxRoundTime": "' + game.maxTime + '", "allowCustomText": ' + game.allowCustomText + ', "allowImages": ' + game.allowImages + ', "cardPacks": ' + cardPacks + ', "judgingMode": "' + game.judgingMode + '" }');
 
     // game.startGameButton.disabled = true;
     event.preventDefault();

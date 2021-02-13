@@ -23,6 +23,9 @@ PlayerList.prototype.playerSubmitted = PlayerList.prototype.triggerRedraw;
 PlayerList.prototype.roundWinner = PlayerList.prototype.triggerRedraw;
 PlayerList.prototype.gameReset = PlayerList.prototype.triggerRedraw;
 
+PlayerList.prototype.setParent = function(newParent) {
+    this.parentElement = newParent;
+};
 
 PlayerList.prototype.redraw = function() {
     var helper = new DOMHelper();
@@ -40,7 +43,9 @@ PlayerList.prototype.redraw = function() {
         var playerIcon = helper.element({ tag:'img', src:'/images/player-icons/' + player.icon + '.png', alt:'Player icon' });
         playerWrapper.appendChild(playerIcon);
 
-        if (player.status == 'Card(s) submitted' || player.status == 'Card czar') playerWrapper.className = 'player-card player-ready';
+        if (player.status == 'Card(s) submitted' || player.status == 'Card czar' || player.status == 'Waiting') {
+            playerWrapper.className = 'player-card player-ready';
+        }
 
         var playerScore = helper.element({ tag:'span', text:player.score, class:'score' });
         playerWrapper.appendChild(playerScore);

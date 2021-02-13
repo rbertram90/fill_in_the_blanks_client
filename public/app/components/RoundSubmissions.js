@@ -1,5 +1,5 @@
 /**
- * Round submissions component
+ * Round submissions (judging) component
  */
 function RoundSubmissions(game, parentElement) {
     Component.call(this, game);
@@ -11,8 +11,13 @@ function RoundSubmissions(game, parentElement) {
 RoundSubmissions.prototype = Object.create(Component.prototype);
 RoundSubmissions.prototype.constructor = RoundSubmissions;
 
+/**
+ * Generate judging display
+ * 
+ * @param {object} message
+ * @param {boolean} playerIsJudge
+ */
 RoundSubmissions.prototype.redraw = function (message, playerIsJudge) {
-    var output = "";
     var helper = new DOMHelper();
 
     var heading = document.createElement('h2');
@@ -36,9 +41,7 @@ RoundSubmissions.prototype.redraw = function (message, playerIsJudge) {
     var blackCard = helper.element({ tag:'div', id:'question_card', html:message.currentQuestion.text })
     this.parentElement.appendChild(blackCard);
 
-    var submissionsWrapper = document.createElement('div');
-    submissionsWrapper.id = 'player_card_submissions';
-
+    var submissionsWrapper = helper.element({ tag:'div', id:'player_card_submissions', parent:this.parentElement });
     var originalQuestionText = message.currentQuestion.text;
 
     // Randomise submission ordering - should this have been done server
@@ -60,27 +63,17 @@ RoundSubmissions.prototype.redraw = function (message, playerIsJudge) {
 
     for (var c = 0; c < randomisedCards.length; c++) {
         var playerCards = randomisedCards[c];
-        // var cardIndex = 0;
-        var questionText = originalQuestionText;
-
-        // var formElement = document.createElement('div');
-        // formElement.className = 'form-element';
 
         var selectableWrapper = helper.element({
             tag: 'div',
             class: 'selectable-wrapper',
             id: 'submission_' + playerCards[0].id,
-            data:{
+            data: {
                 'card-index': playerCards[0].id
             }
         });
 
-        // while (questionText.indexOf('____') > -1) {
-        //     questionText = questionText.replace('____', '<strong>' + playerCards[cardIndex].text + '</strong>');
-        //     cardIndex++;
-        // }
         for (var d = 0; d < playerCards.length; d++) {
-
             var card = playerCards[d];
             var cardElement = document.createElement('p');
             cardElement.className = 'card';
@@ -95,13 +88,10 @@ RoundSubmissions.prototype.redraw = function (message, playerIsJudge) {
         if (playerIsJudge) {
             selectableWrapper.addEventListener('click', this.highlightWinner);
         }
-
     
         // formElement.appendChild(cardElement);
         submissionsWrapper.appendChild(selectableWrapper);
     }
-
-    this.parentElement.appendChild(submissionsWrapper);
 
     if (playerIsJudge) {
         var pickWinnerButton = document.createElement('button');
@@ -111,6 +101,11 @@ RoundSubmissions.prototype.redraw = function (message, playerIsJudge) {
         this.parentElement.appendChild(pickWinnerButton);
         this.pickWinnerButton = pickWinnerButton;
     }
+
+    // Draw player list
+    var playerListWrapper = helper.element({ tag:'div', id:'player_list', parent:this.parentElement });
+    this.game.components.playerList.setParent(playerListWrapper);
+    this.game.components.playerList.triggerRedraw(message);
 };
 
 /**
@@ -125,18 +120,10 @@ RoundSubmissions.prototype.highlightWinner = function (event) {
     var allCards = document.querySelectorAll('#' + roundSubmissions.parentElement.id + ' .selectable-wrapper');
 
     for (i = 0; i < allCards.length; i++) {
-        if (allCards[i].className == 'selectable-wrapper active') {
-            allCards[i].className = "selectable-wrapper";
-        }
+        allCards[i].classList.remove('active');
     }
 
-    // Toggle active class
-    if (this.className.indexOf('active') > -1) {
-        this.className = "selectable-wrapper";
-    }
-    else {
-        this.className = "selectable-wrapper active";
-    }
+    this.classList.toggle('active');
 };
 
 /**
@@ -157,6 +144,12 @@ RoundSubmissions.prototype.pickWinner = function (event) {
     }
 
     roundSubmissions.pickWinnerButton.disabled = true;
+
+    // Ensure the cards are no longer selectable
+    var selectableElements = document.querySelectorAll('#player_card_submissions .selectable-wrapper');
+    for (var s = 0; s < selectableElements.length; s++) {
+        selectableElements[s].removeEventListener('click', RoundSubmissions.prototype.highlightWinner);
+    }
 
     game.socket.send('{ "action": "winner_picked", "card": ' + winningCard.dataset.cardIndex + ' }');
 };

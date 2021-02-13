@@ -493,8 +493,13 @@ BlanksGame.prototype.loadGameScreen = function(data) {
     var game = window.BlanksGameInstance;
 
     var wrapper = helper.element({ tag:'div', id:'game_window' });
-    var heading = helper.element({ tag:'h2', text:t('Choose your card(s)') });
-    wrapper.appendChild(heading);
+    helper.element({ tag:'h2', text:t('Choose your card(s)'), parent:wrapper });
+
+    if (data.currentReader) {
+        var readerText = t("It's [player] turn to read");
+        readerText = readerText.replace("[player]", data.currentReader.username);
+        helper.element({ tag:'h3', text:readerText, parent:wrapper });
+    }
 
     // @todo If someone connects half way through a round then the timer on their screen will be wrong...
     if (data.roundTime > 0) {

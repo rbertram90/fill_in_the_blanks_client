@@ -65,4 +65,5 @@ return [
     'Discard' => 'Descarte',
     'Your search text' => 'Tu texto de búsqueda',
     'Text / Caption' => 'Texto / título',
+    'It\'s [player] turn to read' => 'Es el turno de [player] de leer',
 ];

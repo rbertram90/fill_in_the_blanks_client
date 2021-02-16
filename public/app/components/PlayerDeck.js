@@ -69,6 +69,15 @@ PlayerDeck.prototype.redraw = function() {
 };
 
 /**
+ * Set the parent DOM element to attach the PlayerDeck to
+ * 
+ * @param {object} parentElement 
+ */
+PlayerDeck.prototype.setParent = function(parentElement) {
+    this.parentElement = parentElement;
+};
+
+/**
  * Helper function for showing an error with submission
  * 
  * @param {string} text
@@ -89,10 +98,10 @@ PlayerDeck.prototype.showError = function(text) {
  */
 PlayerDeck.prototype.submitCards = function (event) {
     var game = window.BlanksGameInstance;
-    var form = document.forms.namedItem("player_hand");
-    var thisComponent = game.components.playerDeck;
-
+    // var form = document.forms.namedItem("player_hand");
+    var thisComponent = game.getComponentInstance('playerDeck');
     thisComponent.submitButton.disabled = true;
+    var helper = new DOMHelper();
 
     var answers = [];
     var answerIndexes = [];
@@ -125,9 +134,8 @@ PlayerDeck.prototype.submitCards = function (event) {
     var newContent = '<h2>' + t('Waiting for other players...') + '</h2>';
     game.parentElement.innerHTML = newContent;
 
-    var connectedUsers = document.createElement('div');
-    connectedUsers.id = 'connected_users';
-    game.components.playerList = new PlayerList(this, connectedUsers);
-    game.components.playerList.redraw();    
-    game.parentElement.appendChild(connectedUsers);
+    var connectedUsers = helper.element({ tag:'div', id:'connected_users', parent:game.parentElement });
+    var playerList = game.getComponentInstance('playerList')
+    playerList.setParent(connectedUsers);
+    playerList.redraw();
 };

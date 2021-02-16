@@ -30,33 +30,23 @@ PlayerList.prototype.setParent = function(newParent) {
 PlayerList.prototype.redraw = function() {
     var helper = new DOMHelper();
     this.parentElement.innerHTML = '';
-
-    var heading = helper.element({ tag:'h2', text:t('Players') });
-    this.parentElement.appendChild(heading);
+    helper.element({ tag:'h2', text:t('Players'), parent:this.parentElement });
 
     for (var p = 0; p < this.players.length; p++) {
         var player = this.players[p];
         if (!player.isActive) continue;
 
-        var playerWrapper = helper.element({ tag:'div', class:'player-card' });
+        var playerWrapper = helper.element({ tag:'div', class:'player-card', parent:this.parentElement });
         
-        var playerIcon = helper.element({ tag:'img', src:'/images/player-icons/' + player.icon + '.png', alt:'Player icon' });
-        playerWrapper.appendChild(playerIcon);
+        helper.element({ tag:'img', src:'/images/player-icons/'+ player.icon +'.png', alt:'Player icon', parent:playerWrapper });
 
         if (player.status == 'Card(s) submitted' || player.status == 'Card czar' || player.status == 'Waiting') {
             playerWrapper.className = 'player-card player-ready';
         }
 
-        var playerScore = helper.element({ tag:'span', text:player.score, class:'score' });
-        playerWrapper.appendChild(playerScore);
-        
-        var playerName = helper.element({ tag:'h4', text:player.username });
-        playerWrapper.appendChild(playerName);
-
-        var playerStatus = helper.element({ tag:'p', text:t(player.status) });
-        playerWrapper.appendChild(playerStatus);
-
-        this.parentElement.appendChild(playerWrapper);
+        helper.element({ tag:'span', text:player.score, class:'score', parent:playerWrapper });
+        helper.element({ tag:'h4', text:player.username, parent:playerWrapper });
+        helper.element({ tag:'p', text:t(player.status), parent:playerWrapper });
     }
 };
 

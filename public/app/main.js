@@ -63,7 +63,7 @@ BlanksGame.prototype.handleMessage = function(e) {
                 case 0:
                     if (data.player_is_host) {
                         // Show configure game options screen
-                        game.configForm = game.loadConfigForm(data);
+                        window.BlanksGameInstance.configForm = game.loadConfigForm(data);
                     }
                     else {
                         // Show awaiting game start screen
@@ -134,7 +134,7 @@ BlanksGame.prototype.handleMessage = function(e) {
             break;
 
         case 'player_judged':
-            game.components.playerList.triggerRedraw(data);
+            game.getComponentInstance('playerList').triggerRedraw(data);
             break;
 
         case 'round_winner':
@@ -149,11 +149,7 @@ BlanksGame.prototype.handleMessage = function(e) {
             winnerHeading.innerHTML = '<strong>' + data.winner.username + '</strong> ' + t('is the round winner') + ': ';
             game.parentElement.appendChild(winnerHeading);
 
-            // var connectedUsers = document.createElement('div');
-            // connectedUsers.id = 'connected_users';
-            // game.components.playerList = new PlayerList(this, connectedUsers);
-            game.components.playerList.redraw(); // this will happen when components refreshed
-            // game.parentElement.appendChild(connectedUsers);
+            game.getComponentInstance('playerList').redraw();
 
             var nextRoundWarning = document.createElement('span');
             nextRoundWarning.innerText = t('Next round starting in [time] seconds');
@@ -196,6 +192,36 @@ BlanksGame.prototype.handleMessage = function(e) {
 
     // Main call to let the UI update itself!
     game.updateComponents(data);
+};
+
+/**
+ * Helper function to get a game component that means only
+ * one instances is created
+ * 
+ * @param {string} componentName
+ */
+BlanksGame.prototype.getComponentInstance = function(componentName) {
+    var game = window.BlanksGameInstance;
+    
+    if (typeof game.components[componentName] === 'undefined') {
+        switch (componentName) {
+            case 'playerList':
+                game.components[componentName] = new PlayerList(game, game.parentElement);
+                break;
+            case 'roundSubmissions':
+                game.components[componentName] = new RoundSubmissions(game, game.parentElement);
+                break;
+            case 'playerDeck':
+                game.components[componentName] = new PlayerDeck(game, game.parentElement);
+                break;
+            default:
+                // Unknown component
+                console.error('Failed to initialise component ' + componentName);
+                break;
+        }
+    }
+    
+    return game.components[componentName];
 };
 
 /**
@@ -345,6 +371,11 @@ BlanksGame.prototype.loadConnectForm = function() {
     };
 };
 
+/**
+ * Load the game configration form for the 'host' user
+ * 
+ * @param {mixed[]} data 
+ */
 BlanksGame.prototype.loadConfigForm = function(data) {
     var helper = new DOMHelper();
 
@@ -407,12 +438,10 @@ BlanksGame.prototype.loadConfigForm = function(data) {
     submitButton.addEventListener('click', this.startGame);
 
     // Connected users display
-    var connectedUsers = document.createElement('div');
-    connectedUsers.id = 'connected_users';
-    this.components.playerList = new PlayerList(this, connectedUsers);
-    this.components.playerList.redraw();
-    wrapper.appendChild(connectedUsers);
-
+    var connectedUsers = helper.element({ tag:'div', id:'connected_users', parent:wrapper });
+    var playerList = this.getComponentInstance('playerList');
+    playerList.setParent(connectedUsers);
+    
     // Return the field elements, which sets game.configForm variable
     return {
         maxTime: maxTimeSelect,
@@ -479,8 +508,9 @@ BlanksGame.prototype.loadAwaitGameStart = function() {
     var connectedUsers = document.createElement('div');
     connectedUsers.id = 'connected_users';
 
-    this.components.playerList = new PlayerList(this, connectedUsers);
-    this.components.playerList.redraw();
+    var playerList = this.getComponentInstance('playerList');
+    playerList.setParent(connectedUsers);
+    playerList.redraw();
 
     wrapper.appendChild(lhs);
     wrapper.appendChild(connectedUsers);
@@ -593,17 +623,16 @@ BlanksGame.prototype.loadGameScreen = function(data) {
     }
 
     // Submit button
-    var submitCardsButton = helper.element({ tag:'button', class:'big', text:t('Play card(s)') });
-    wrapper.appendChild(submitCardsButton);
+    var submitCardsButton = helper.element({ tag:'button', class:'big', text:t('Play card(s)'), parent:wrapper });
 
     // Answer cards
-    var playerCardsWrapper = helper.element({ tag:'div', id:'player_hand' });
-    this.components.playerDeck = new PlayerDeck(this, playerCardsWrapper);
-    this.components.playerDeck.submitButton = submitCardsButton;
-    submitCardsButton.addEventListener('click', this.components.playerDeck.submitCards);
-    this.components.playerDeck.redraw();
+    var playerCardsWrapper = helper.element({ tag:'div', id:'player_hand', parent:wrapper });
+    var playerDeck = this.getComponentInstance('playerDeck');
+    playerDeck.setParent(playerCardsWrapper);
+    playerDeck.submitButton = submitCardsButton;
+    submitCardsButton.addEventListener('click', playerDeck.submitCards);
+    playerDeck.redraw();
 
-    wrapper.appendChild(playerCardsWrapper);
     this.parentElement.appendChild(wrapper);
 };
 
@@ -817,49 +846,37 @@ BlanksGame.prototype.loadJudgeWaitingScreen = function(data) {
         setTimeout(tickTime, 1);
     }
 
-    var blackCardWrapper = document.createElement('div');
-    blackCardWrapper.id = 'question_card';
-    blackCardWrapper.innerHTML = data.questionCard.text;
-    wrapper.appendChild(blackCardWrapper);
+    // Black card wrapper
+    helper.element({ tag:'div', id:'question_card', html:data.questionCard.text, parent:wrapper });
 
     // Connected users display
-    var connectedUsers = document.createElement('div');
-    connectedUsers.id = 'connected_users';
-
-    this.components.playerList = new PlayerList(this, connectedUsers);
-    this.components.playerList.redraw();
+    var connectedUsers = helper.element({ tag:'div', id:'connected_users', parent:wrapper });
+    var playerList = this.getComponentInstance('playerList');
+    playerList.setParent(connectedUsers);
+    playerList.triggerRedraw(data);
     
-    wrapper.appendChild(connectedUsers);
     this.parentElement.appendChild(wrapper);
 };
 
 BlanksGame.prototype.loadJudgeScreen = function(data, playerIsJudge) {
-    // allCards
-    // currentJudge
+    // Delegate this to the round submissions component!
+    var helper = new DOMHelper();
+    var resultsWrapper = helper.element({ tag:'div', id:'player_submissions', parent:this.parentElement });
 
-    // Connected users display
-    var resultsWrapper = document.createElement('div');
-    resultsWrapper.id = 'player_submissions';
-
-    this.components.roundSubmissions = new RoundSubmissions(this, resultsWrapper);
-    this.components.roundSubmissions.redraw(data, playerIsJudge);
-    
-    this.parentElement.appendChild(resultsWrapper);
+    var roundSubmissions = this.getComponentInstance('roundSubmissions');
+    roundSubmissions.setParent(resultsWrapper);
+    roundSubmissions.redraw(data, playerIsJudge);
 };
 
 BlanksGame.prototype.loadResultsScreen = function(data) {
     var helper = new DOMHelper();
+    helper.element({ tag:'h2', text:t('Game finished'), parent:this.parentElement });
 
-    var heading = helper.element({ tag:'h2', text:t('Game finished') });
-    this.parentElement.appendChild(heading);
-
-    var leaderboard = helper.element({ tag:'div', id:'leaderboard' });
-
-    this.components.playerList = new PlayerList(this, leaderboard);
-    this.components.playerList.players = data.players;
-    this.components.playerList.winScreen();
-
-    this.parentElement.appendChild(leaderboard);
+    var leaderboard = helper.element({ tag:'div', id:'leaderboard', parent:this.parentElement });
+    var playerList = this.getComponentInstance('playerList');
+    playerList.setParent(leaderboard);
+    playerList.players = data.players;
+    playerList.winScreen();
 };
 
 BlanksGame.prototype.updateComponents = function(message) {

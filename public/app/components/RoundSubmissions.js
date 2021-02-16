@@ -97,8 +97,18 @@ RoundSubmissions.prototype.redraw = function (message, playerIsJudge) {
 
     // Draw player list
     var playerListWrapper = helper.element({ tag:'div', id:'player_list', parent:this.parentElement });
-    this.game.components.playerList.setParent(playerListWrapper);
-    this.game.components.playerList.triggerRedraw(message);
+    var playerList = this.game.getComponentInstance('playerList');
+    playerList.setParent(playerListWrapper);
+    playerList.triggerRedraw(message);
+};
+
+/**
+ * Update the parent DOM element to attach RoundSubmissions to
+ * 
+ * @param {object} parentElement 
+ */
+RoundSubmissions.prototype.setParent = function(parentElement) {
+    this.parentElement = parentElement;
 };
 
 /**
@@ -108,7 +118,7 @@ RoundSubmissions.prototype.redraw = function (message, playerIsJudge) {
  */
 RoundSubmissions.prototype.highlightWinner = function (event) {
     var game = window.BlanksGameInstance;
-    var roundSubmissions = game.components.roundSubmissions;
+    var roundSubmissions = game.getComponentInstance('roundSubmissions');
 
     var allCards = document.querySelectorAll('#' + roundSubmissions.parentElement.id + ' .selectable-wrapper');
 
@@ -127,12 +137,11 @@ RoundSubmissions.prototype.highlightWinner = function (event) {
  */
 RoundSubmissions.prototype.pickWinner = function (event) {
     var game = window.BlanksGameInstance;
-    var roundSubmissions = game.components.roundSubmissions;
+    var roundSubmissions = game.getComponentInstance('roundSubmissions');
     var winningCard = document.querySelector('#' + roundSubmissions.parentElement.id + " .selectable-wrapper.active");
 
     if (!winningCard) {
         document.getElementById('pick_errors').innerHTML = '<p class="error">' + t('Please choose the winning card') + '</p>';
-        // game.components.messagePanel.showMessage(t('Please select a card'), 'error');
         return;
     }
 

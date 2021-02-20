@@ -64,12 +64,20 @@ RoundSubmissions.prototype.redraw = function (message, playerIsJudge) {
     for (var c = 0; c < randomisedCards.length; c++) {
         var playerCards = randomisedCards[c];
 
+        var thisPlayerCard = this.game.player.selectedCards[0];
+        var isSelectable = true;
+
+        if (message.judgeMode == 1 && this.game.player.selectedCards[0] && playerCards[0].id == thisPlayerCard.id) {
+            isSelectable = false;
+        }
+
         var selectableWrapper = helper.element({
             tag: 'div',
             class: 'selectable-wrapper',
             id: 'submission_' + playerCards[0].id,
             data: {
-                'card-index': playerCards[0].id
+                'card-index': playerCards[0].id,
+                'selectable': isSelectable
             }
         });
 
@@ -78,7 +86,7 @@ RoundSubmissions.prototype.redraw = function (message, playerIsJudge) {
             helper.element({ tag:'p', class:'card', html:card.text, parent:selectableWrapper });
         }
 
-        if (playerIsJudge) {
+        if (playerIsJudge && isSelectable) {
             selectableWrapper.addEventListener('click', this.highlightWinner);
         }
     

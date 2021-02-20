@@ -125,7 +125,7 @@ BlanksGame.prototype.handleMessage = function(e) {
         case 'player_connected':
             // Check if the player that connected is local player
             // If they are game host then enable buttons
-            if (data.host) {
+            if (data.host && data.playerName == game.player.username) {
                 game.clientIsGameHost = true;
             }
             break;

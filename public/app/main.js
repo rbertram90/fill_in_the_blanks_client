@@ -1,24 +1,64 @@
 /**
  * Class BlanksGame
+ * 
+ * The following is an outline of the messaging between the client and the server
+ * and the key javascript functions that are called in the process.
+ * 
+ * Player loads game.php
+ *  > game.loadConnectForm
+ * 
+ * Player completes form and submits
+ *  > game.openConnection - should be called validate form?
+ *  > game.createServerConnection - this is where the actual connection gets opened!
+ * 
+ * Player is connected to server
+ *  > player_connected message sent to server
+ *  > game.handleMessage is listening for WebSocket messages
+ *  > connected_game_status message is sent back from server
+ *  > player_connected message is sent back from server
+ *  > user is either shown waiting to start game screen or config form if host
+ *  > unless the game is already underway in which player could either see
+ *    round judge or round play screens
+ * 
+ * Host starts game
+ *  > start_game message is sent to server
+ *  > answer_card_update message is sent to each player, dealing out cards
+ *  > round_start message is sent to all players from server with details on judge and question
+ *  > responsibility for generating this view then gets handed off to PlayerDeck component
+ * 
+ * Player chooses a card
+ *  > cards_submit message sent to server
+ *  > player_submitted message gets sent to all players
+ * 
+ * All players have submitted cards
+ *  > round_judge message sent to all players
+ *  > responsibility for generating this view then gets handed off to RoundSubmissions component
+ * 
+ * Winning card is picked (standard judging mode)
+ *  > winner_picked sent to server
+ *  > round_winner is sent to all players
+ *  > countdown of 10 seconds to next round starts
+ * 
+ * Next round begins
+ *  > answer_card_update is sent to each player to replace the cards played in the previous round
+ *  > round_start message is sent to all players
+ *  > game continues until a player has reached the winning score
+ * 
+ * Player reaches winning score
+ *  > countdown of 10 seconds to next round has happened
+ *  > game_won message sent to all players
+ *  > the server should now be restarted to start a new game (todo: make a button to reset without stopping server!)
+ * 
  */
 function BlanksGame() {
-
     this.components = {};
-
-    // Create and initialise all page components
-    /*
-        messagePanel: new MessagesPanel(this),
-        playerList: new PlayerList(this),
-        roundQuestion: new RoundQuestion(this),
-        roundSubmissions: new RoundSubmissions(this),
-        playerDeck: new PlayerDeck(this)
-    };*/
 
     // Create outer wrapper
     this.parentElement = document.createElement('div');
     this.parentElement.id = 'blanks_game';
     document.body.appendChild(this.parentElement);
 
+    // Connection to server
     this.socket = null;
 
     // Game variables
@@ -29,7 +69,7 @@ function BlanksGame() {
 
     this.currentQuestion = {};
 
-    this.winningScore = 5; // default
+    this.winningScore = 5;
     this.winingScoreOptions = [3,4,5,6,7,8,9,10];
 
     this.maxTime = 120000; // default - 2 minutes
@@ -63,7 +103,7 @@ BlanksGame.prototype.handleMessage = function(e) {
                 case 0:
                     if (data.player_is_host) {
                         // Show configure game options screen
-                        game.configForm = game.loadConfigForm(data);
+                        window.BlanksGameInstance.configForm = game.loadConfigForm(data);
                     }
                     else {
                         // Show awaiting game start screen
@@ -85,7 +125,7 @@ BlanksGame.prototype.handleMessage = function(e) {
         case 'player_connected':
             // Check if the player that connected is local player
             // If they are game host then enable buttons
-            if (data.host) {
+            if (data.host && data.playerName == game.player.username) {
                 game.clientIsGameHost = true;
             }
             break;
@@ -110,9 +150,11 @@ BlanksGame.prototype.handleMessage = function(e) {
             game.allowCustomText = data.allowCustomText;
             game.allowImages = data.allowImages;
             game.parentElement.innerHTML = '';
-            game.currentJudge = data.currentJudge.username;
+            game.currentJudge = data.currentJudge ? data.currentJudge.username : null;
             game.currentQuestion = data.questionCard;
             game.currentQuestion.blanks = (game.currentQuestion.text.match(/____/g) || []).length;
+
+            game.player.selectedCards = [];
 
             if (game.currentJudge == game.player.username) {
                 game.loadJudgeWaitingScreen(data);
@@ -124,7 +166,17 @@ BlanksGame.prototype.handleMessage = function(e) {
 
         case 'round_judge':
             game.parentElement.innerHTML = '';
-            game.loadJudgeScreen(data, (game.currentJudge == game.player.username));
+            if (data.judgeMode == 1) { // GAME_JM_COMMITTEE
+                var playerIsJudge = true; // Everyone's a judge
+            }
+            else {
+                var playerIsJudge = game.currentJudge == game.player.username
+            }
+            game.loadJudgeScreen(data, playerIsJudge);
+            break;
+
+        case 'player_judged':
+            game.getComponentInstance('playerList').triggerRedraw(data);
             break;
 
         case 'round_winner':
@@ -139,11 +191,7 @@ BlanksGame.prototype.handleMessage = function(e) {
             winnerHeading.innerHTML = '<strong>' + data.winner.username + '</strong> ' + t('is the round winner') + ': ';
             game.parentElement.appendChild(winnerHeading);
 
-            var connectedUsers = document.createElement('div');
-            connectedUsers.id = 'connected_users';
-            game.components.playerList = new PlayerList(this, connectedUsers);
-            // game.components.playerList.redraw(); // this will happen when components refreshed
-            game.parentElement.appendChild(connectedUsers);
+            game.getComponentInstance('playerList').redraw();
 
             var nextRoundWarning = document.createElement('span');
             nextRoundWarning.innerText = t('Next round starting in [time] seconds');
@@ -186,6 +234,36 @@ BlanksGame.prototype.handleMessage = function(e) {
 
     // Main call to let the UI update itself!
     game.updateComponents(data);
+};
+
+/**
+ * Helper function to get a game component that means only
+ * one instances is created
+ * 
+ * @param {string} componentName
+ */
+BlanksGame.prototype.getComponentInstance = function(componentName) {
+    var game = window.BlanksGameInstance;
+    
+    if (typeof game.components[componentName] === 'undefined') {
+        switch (componentName) {
+            case 'playerList':
+                game.components[componentName] = new PlayerList(game, game.parentElement);
+                break;
+            case 'roundSubmissions':
+                game.components[componentName] = new RoundSubmissions(game, game.parentElement);
+                break;
+            case 'playerDeck':
+                game.components[componentName] = new PlayerDeck(game, game.parentElement);
+                break;
+            default:
+                // Unknown component
+                console.error('Failed to initialise component ' + componentName);
+                break;
+        }
+    }
+    
+    return game.components[componentName];
 };
 
 /**
@@ -232,62 +310,42 @@ BlanksGame.prototype.loadConnectForm = function() {
     }
 
     // Form
-    var connectForm = document.createElement('form');
-    connectForm.id = 'connect_form';
+    var connectForm = helper.element({ tag:'form', id:'connect_form' });
 
     // Heading
-    var title = helper.element({ tag: 'h2', text: t('Connect to game server') });
-    connectForm.appendChild(title);
+    helper.element({ tag:'h2', text:t('Connect to game server'), parent:connectForm });
 
     // Placeholder for errors
-    var errorWrapper = helper.element({ tag:'div', class:'errors' });
-    connectForm.appendChild(errorWrapper);
+    var errorWrapper = helper.div({ class:'errors', parent:connectForm });
 
     // Host
-    var hostWrapper = helper.element({ tag:'div', class:'field', id:'field_host' });
-    connectForm.appendChild(hostWrapper);
-    var hostLabel = helper.element({ tag:'label', for:'connect_host', text: t('Host server') });
-    hostWrapper.appendChild(hostLabel);
-    var hostField = helper.element({ tag:'input', type: 'text', id:'connect_host', value: host });
+    var hostWrapper = helper.div({ class:'field', id:'field_host', parent:connectForm });
+    var hostField = helper.textField({ label:t('Host server'), id:'connect_host', value:host, parent:hostWrapper });
     hostField.setAttribute('required', 'required');
-    hostWrapper.appendChild(hostField);
 
     // Port
-    var portWrapper = helper.element({ tag:'div', class:'field', id:'field_port' });
-    connectForm.appendChild(portWrapper);
-    var portLabel = helper.element({ tag:'label', for:'connect_port', text: t('Port') });
-    portWrapper.appendChild(portLabel);
-    var portField = helper.element({ tag:'input', type: 'text', id:'connect_port', value: port });
+    var portWrapper = helper.div({ class:'field', id:'field_port', parent:connectForm });
+    var portField = helper.textField({ label:t('Port'), id:'connect_port', value:port, parent:portWrapper });
     portField.setAttribute('required', 'required');
     portField.setAttribute('size', '4');
-    portWrapper.appendChild(portField);
 
     // Username
-    var usernameWrapper = helper.element({ tag:'div', class:'field', id:'field_username' });
-    connectForm.appendChild(usernameWrapper);
-    var usernameLabel = helper.element({ tag:'label', for:'username', text: t('Username') });
-    usernameWrapper.appendChild(usernameLabel);
-    var usernameField = helper.element({ tag:'input', type: 'text', id:'username', value: username });
+    var usernameWrapper = helper.div({ class:'field', id:'field_username', parent:connectForm });
+    var usernameField = helper.textField({ label:t('Username'), id:'username', value:username, parent:usernameWrapper });
     usernameField.setAttribute('required', 'required');
-    usernameWrapper.appendChild(usernameField);
 
-    var rememberMeWrapper = helper.element({ tag:'div', class: 'field', id: 'field_remember' });
-    var rememberMe = helper.element({ tag: 'input', id: 'remember_me', type: 'checkbox' });
-    var rememberMeLabel = helper.element({ tag: 'label', for: 'remember_me', text: t('Remember these details') });
+    // Remember me?
+    var rememberMeWrapper = helper.div({ class:'field', id:'field_remember', parent:connectForm });
+    var rememberMe = helper.element({ tag:'input', id:'remember_me', type:'checkbox', parent:rememberMeWrapper });
+    helper.element({ tag:'label', for:'remember_me', text:t('Remember these details'), parent:rememberMeWrapper });
     if (remember_me) {
         rememberMe.checked = true;
     }
 
-    rememberMeWrapper.appendChild(rememberMe);
-    rememberMeWrapper.appendChild(rememberMeLabel);
-    connectForm.appendChild(rememberMeWrapper);
-
     // Icon
-    var iconWrapper = helper.element({ tag:'div', class:'field', id:'field_icon' });
-    var iconLabel = helper.element({ tag:'label', for:'icon', text:t('Player face') });
-    var iconField = helper.element({ tag:'input', type:'hidden', name:'icon', value:default_icon });
-    iconWrapper.appendChild(iconLabel);
-    iconWrapper.appendChild(iconField);
+    var iconWrapper = helper.div({ class:'field', id:'field_icon', parent:connectForm });
+    helper.element({ tag:'label', for:'icon', text:t('Player face'), parent:iconWrapper });
+    var iconField = helper.element({ tag:'input', type:'hidden', name:'icon', value:default_icon, parent:iconWrapper });
 
     for (var i = 1; i <= 28; i++) {
         var icon = helper.element({ tag: 'img', src: '/images/player-icons/' + i + '.png', class: 'player-icon',
@@ -306,23 +364,15 @@ BlanksGame.prototype.loadConnectForm = function() {
         });
         iconWrapper.appendChild(icon);
     }
-    connectForm.appendChild(iconWrapper);
 
     // Actions
-    var actionsWrapper = document.createElement('div');
-    actionsWrapper.className = 'actions';
-    connectForm.appendChild(actionsWrapper);
-
-    var submitButton = document.createElement('button');
-    submitButton.id = 'connect_button';
-    submitButton.type = 'button';
-    submitButton.innerText = t('Connect');
-    actionsWrapper.appendChild(submitButton);
-
+    var actionsWrapper = helper.div({ class:'actions', parent:connectForm });
+    var submitButton = helper.element({ tag:'button', id:'connect_button', type:'button', text:t('Connect'), parent:actionsWrapper });
     submitButton.addEventListener('click', this.openConnection);
 
     this.parentElement.appendChild(connectForm);
 
+    // Return form fields for later reference
     return {
         form: connectForm,
         errors: errorWrapper,
@@ -335,6 +385,11 @@ BlanksGame.prototype.loadConnectForm = function() {
     };
 };
 
+/**
+ * Load the game configration form for the 'host' user
+ * 
+ * @param {mixed[]} data 
+ */
 BlanksGame.prototype.loadConfigForm = function(data) {
     var helper = new DOMHelper();
 
@@ -370,6 +425,11 @@ BlanksGame.prototype.loadConfigForm = function(data) {
     helper.label({ text:t('Allow images'), for:'allow_images', parent:typeWrapper });
     var allowImagesCheck = helper.element({ tag:'input', type:'checkbox', id:'allow_images', parent:typeWrapper });
     
+    // Switch to 'committee mode'
+    helper.label({ text:t('Judging mode'), for:'judging_mode', parent:typeWrapper });
+    var judgingMode = helper.dropdown({ name:'judging_mode', id:'judging_mode', options:['Normal mode', 'Committee vote mode'], parent:typeWrapper });
+
+    // Choose card packs
     var packsWrapper = helper.element({ tag:'div', class:'card-pack-selection', parent:optionsWrapper });
     helper.element({ tag:'h3', text:t('Select card pack(s)'), parent:packsWrapper });
     var cardPacksCheckboxes = [];
@@ -392,19 +452,18 @@ BlanksGame.prototype.loadConfigForm = function(data) {
     submitButton.addEventListener('click', this.startGame);
 
     // Connected users display
-    var connectedUsers = document.createElement('div');
-    connectedUsers.id = 'connected_users';
-    this.components.playerList = new PlayerList(this, connectedUsers);
-    this.components.playerList.redraw();
-    wrapper.appendChild(connectedUsers);
-
+    var connectedUsers = helper.element({ tag:'div', id:'connected_users', parent:wrapper });
+    var playerList = this.getComponentInstance('playerList');
+    playerList.setParent(connectedUsers);
+    
     // Return the field elements, which sets game.configForm variable
     return {
         maxTime: maxTimeSelect,
         winningScore: winScoreSelect,
         allowCustomText: allowCustomTextCheck,
         allowImages: allowImagesCheck,
-        cardPacks: cardPacksCheckboxes
+        cardPacks: cardPacksCheckboxes,
+        judgingMode: judgingMode
     };
 };
 
@@ -419,6 +478,7 @@ BlanksGame.prototype.startGame = function(event) {
     game.maxTime = game.maxTimeOptions[game.configForm.maxTime.selectedIndex];
     game.allowCustomText = game.configForm.allowCustomText.checked;
     game.allowImages = game.configForm.allowImages.checked;
+    game.judgingMode = game.configForm.judgingMode.selectedIndex;
     var cardPacks = [];
 
     for (var p = 0; p < game.configForm.cardPacks.length; p++) {
@@ -436,7 +496,7 @@ BlanksGame.prototype.startGame = function(event) {
 
     cardPacks = JSON.stringify(cardPacks);
 
-    game.socket.send('{ "action": "start_game", "winningScore": "' + game.winningScore + '", "maxRoundTime": "' + game.maxTime + '", "allowCustomText": ' + game.allowCustomText + ', "allowImages": ' + game.allowImages + ', "cardPacks": ' + cardPacks + ' }');
+    game.socket.send('{ "action": "start_game", "winningScore": "' + game.winningScore + '", "maxRoundTime": "' + game.maxTime + '", "allowCustomText": ' + game.allowCustomText + ', "allowImages": ' + game.allowImages + ', "cardPacks": ' + cardPacks + ', "judgingMode": "' + game.judgingMode + '" }');
 
     // game.startGameButton.disabled = true;
     event.preventDefault();
@@ -462,8 +522,9 @@ BlanksGame.prototype.loadAwaitGameStart = function() {
     var connectedUsers = document.createElement('div');
     connectedUsers.id = 'connected_users';
 
-    this.components.playerList = new PlayerList(this, connectedUsers);
-    this.components.playerList.redraw();
+    var playerList = this.getComponentInstance('playerList');
+    playerList.setParent(connectedUsers);
+    playerList.redraw();
 
     wrapper.appendChild(lhs);
     wrapper.appendChild(connectedUsers);
@@ -471,299 +532,21 @@ BlanksGame.prototype.loadAwaitGameStart = function() {
     this.parentElement.appendChild(wrapper);
 };
 
+/**
+ * Generate the main game screen, farmed out to PlayerDeck
+ * 
+ * @param {mixed} data
+ */
 BlanksGame.prototype.loadGameScreen = function(data) {
-    var helper = new DOMHelper();
-    var game = window.BlanksGameInstance;
-
-    var wrapper = helper.element({ tag:'div', id:'game_window' });
-    var heading = helper.element({ tag:'h2', text:t('Choose your card(s)') });
-    wrapper.appendChild(heading);
-
-    // @todo If someone connects half way through a round then the timer on their screen will be wrong...
-    if (data.roundTime > 0) {
-        var nowSeconds = Math.floor(new Date().getTime() / 1000);
-        var roundEnd = nowSeconds + parseInt(data.roundTime / 1000);
-        
-        var timer = helper.element({ tag:'div', class:'round-timer', id:'round_timer', data:{ roundend: roundEnd } });
-        wrapper.appendChild(timer);
-
-        var tickTime = function() {
-            var elem = document.getElementById('round_timer');
-
-            if (!elem) return;
-            var roundEnd = elem.dataset.roundend;
-            var nowSeconds = Math.floor(new Date().getTime() / 1000);
-            var seconds = (roundEnd - nowSeconds);
-            var minutes = Math.floor(seconds / 60);
-            seconds = seconds - (minutes*60);
-            elem.innerText = t('Time remaining:') + ' ' + minutes + ':' + ('00' + seconds).slice(-2);
-            
-            if (minutes <= 0 && seconds <= 0) return;
-            setTimeout(tickTime, 1000);
-        };
-        
-        setTimeout(tickTime, 1);
-    }
-
-    // In play wrapper
-    var inPlay = helper.element({ tag:'div', id:'in_play' });
-    wrapper.appendChild(inPlay);
-
-    // Question
-    var blackCard = helper.element({ tag:'div', id:'question_card', html:data.questionCard.text })
-    inPlay.appendChild(blackCard);
-
-    var labels = [t('First card'), t('Second card'), t('Third card')];
-
-    // Active placeholders
-    var activePlaceholdersRequired = game.currentQuestion.blanks;
-    for (var aph = 0; aph < activePlaceholdersRequired; aph++) {
-        var placeholder = helper.element({ tag:'div', class:'input-wrapper' });
-
-        var label = helper.element({ tag:'p', text:labels[aph] });
-        placeholder.appendChild(label);
-
-        var dropzone = helper.element({ tag:'div', class:'card-dropzone' });
-        placeholder.appendChild(dropzone);
-
-        $(dropzone).droppable({
-            drop: function(event, ui) {
-                var draggedCard = ui.draggable;
-
-                // Enable the original parent to now be droppable
-                draggedCard.parent().droppable("enable");
-
-                $(this).append(draggedCard);
-                draggedCard.css('top', 0);
-                draggedCard.css('left', 0);
-
-                // Disable so no more cards can be added to this space
-                $(event.target).droppable("disable");
-
-                // Enable the edit button
-                $(this.parentElement).find('button.edit-card').prop('disabled', false);
-            }
-        });
-
-        if (game.allowCustomText || game.allowImages) {
-            var editButton = helper.element({ tag:'button', text:t('Edit card'), class:'edit-card' });
-            editButton.setAttribute('disabled', 'disabled');
-
-            editButton.addEventListener('click', function (e) {
-                var card = $(this.parentElement).find('p.card');
-                var cardID = card.attr('id');
-                game.showEditCardModal(cardID);
-                e.preventDefault();
-            });
-
-            placeholder.appendChild(editButton);
-        }
-
-        inPlay.appendChild(placeholder);
-    }
-
-    // Inactive placeholders
-    // Hard coded 3 - max number of blanks in one card!
-    var placeholdersRequired = 3 - game.currentQuestion.blanks;
-    for (var ph = 0; ph < placeholdersRequired; ph++) {
-        var placeholder = helper.element({ tag:'div', class:'card-no-dropzone' });
-        inPlay.appendChild(placeholder);
-    }
-
-    // Submit button
-    var submitCardsButton = helper.element({ tag:'button', class:'big', text:t('Play card(s)') });
-    wrapper.appendChild(submitCardsButton);
-
-    // Answer cards
-    var playerCardsWrapper = helper.element({ tag:'div', id:'player_hand' });
-    this.components.playerDeck = new PlayerDeck(this, playerCardsWrapper);
-    this.components.playerDeck.submitButton = submitCardsButton;
-    submitCardsButton.addEventListener('click', this.components.playerDeck.submitCards);
-    this.components.playerDeck.redraw();
-
-    wrapper.appendChild(playerCardsWrapper);
-    this.parentElement.appendChild(wrapper);
-};
-
-BlanksGame.prototype.showEditCardModal = function (cardID) {
-
-    var card = $('#' + cardID);
-    if (!card.length == 1) {
-        console.error('Card not found!');
-        return;
-    }
-
-    if (card.find('.text').length > 0) {
-        var text = card.find('.text').html();
-        var image = card.find('img').attr('src');
-    }
-    else {
-        var text = card.html();
-        var image = '';
-    }
-
-    var helper = new DOMHelper();
-    var container = document.getElementById('card_edit_box');
-    if (container) {
-        container.style.display = 'block';
-    }
-    else {
-        container = helper.element({ tag:'div', id:'card_edit_box' });
-        document.body.appendChild(container);
-    }
-
-    $('body').css('overflow', 'hidden');
-    $('html').css('overflow', 'hidden');
-
-    var innerContainer = helper.element({ tag:'div', class:'container' });
-    container.appendChild(innerContainer);
-
-    var containerHeading = helper.element({ tag:'h2', text:t('Edit card') });
-    innerContainer.appendChild(containerHeading);
-
-    if (this.allowCustomText) {
-        // Custom text
-        var customCardWrapper = helper.element({ tag:'div', id:'custom_text_wrapper' });
-        var textBoxLabel = helper.element({ tag:'label', for:'custom_text_input', text:t('Text / Caption') });
-        var textBox = helper.element({ tag:'textarea', id:'custom_text_input', value:text });
-        
-        customCardWrapper.appendChild(textBoxLabel);
-        customCardWrapper.appendChild(textBox);
-        innerContainer.appendChild(customCardWrapper);
-    }
-    
-    if (this.allowImages) {    
-        // Image
-        var imageHeading = helper.element({ tag:'h3', text:t('Add an image') });
-        innerContainer.appendChild(imageHeading);
-
-        var customImageWrapper = helper.element({ tag:'div', id:'custom_image_wrapper' , class:'custom-image-wrapper' });
-        var imageSourceLabel = helper.element({ tag:'label', for:'custom_image_input', text:t('Image URL') });
-        customImageWrapper.appendChild(imageSourceLabel);
-    
-        var imageSource = helper.element({ tag:'input', type:'text', id:'custom_image_input', value:image });
-        imageSource.placeholder = 'http://example.com/image.jpg';
-        imageSource.style.width = '100%';
-        imageSource.addEventListener('keyup', function (e) {
-            $('#preview_image').attr('src', $(this).val());
-        });
-        customImageWrapper.appendChild(imageSource);
-
-        var previewImage = helper.element({ tag:'img', id:'preview_image', src: image });
-        customImageWrapper.appendChild(previewImage);
-        
-        if (config.giphy_api_key) {
-            var orText = helper.element({ tag:'p', text:t('- or -') });
-            customImageWrapper.appendChild(orText);
-
-            var paragraph = helper.element({ tag:'p', text:t('Enter your search text to search Giphy API for GIFs, click the image you want to use, this will replace the URL above.') });
-            customImageWrapper.appendChild(paragraph);
-
-            var giphyContainer = helper.element({ tag:'div', class:'giphy-search-box' });
-            customImageWrapper.appendChild(giphyContainer);
-
-            var giphyLogo = helper.element({ tag:'img', src:'/images/giphy_logo.png', alt:'GIPHY' });
-            giphyContainer.appendChild(giphyLogo);
-
-            var searchInputWrapper = helper.element({ tag:'div', class:'search-input-wrapper' });
-            giphyContainer.appendChild(searchInputWrapper);
-
-            var innerInput = helper.element({ tag:'input', type:'text', id:'giphy_search_text', placeholder:t('Your search text') });
-            searchInputWrapper.appendChild(innerInput);
-
-            var innerButton = helper.element({ tag:'button', type:'button', id:'giphy_search_button', text:t('Search') });
-            innerButton.addEventListener('click', function(e) {
-                var searchTerm = encodeURIComponent(document.getElementById('giphy_search_text').value);
-                var xhr = $.get({
-                    url:"http://api.giphy.com/v1/gifs/search?q=" + searchTerm + "&api_key=" + config.giphy_api_key + "&limit=16",
-                    crossDomain: true
-                });
-                xhr.done(function(data) {
-                    var wrapper = document.getElementById('giphy_results');
-
-                    for(var i = 0; i < data.data.length; i++) {
-                        var item = data.data[i];
-                        var imageURL = item.images.fixed_width_downsampled.url;
-                        var selectableDiv = helper.element({ tag:'div', class:'giphy_selectable', data: {url:imageURL } });
-                        var giphyImage = helper.element({ tag:'img', src:imageURL, alt:item.title });
-                        selectableDiv.appendChild(giphyImage);
-                        wrapper.appendChild(selectableDiv);
-
-                        selectableDiv.addEventListener('click', function(e) {
-                            $('.giphy_selectable.active').removeClass('active');
-                            this.className = 'giphy_selectable active';
-                            $('#custom_image_input')
-                                .val($(this).find('img').attr('src'));
-
-                            var event = new Event('keyup');
-                            document.getElementById('custom_image_input').dispatchEvent(event);
-                        });
-                    }
-                });
-
-                e.preventDefault();
-            });
-            searchInputWrapper.appendChild(innerButton);
-
-            var resultsArea = helper.element({ tag:'div', id:'giphy_results' });
-            giphyContainer.appendChild(resultsArea);
-        }
-    
-        innerContainer.appendChild(customImageWrapper);
-    }
-
-    var actionsWrapper = helper.element({ tag:'div', class:'actions' });
-    innerContainer.appendChild(actionsWrapper);
-
-    var closeWindow = function() {
-        var container = document.getElementById('card_edit_box');
-        container.innerHTML = '';
-        container.style.display = 'none';
-        $('body').css('overflow', 'visible');
-        $('html').css('overflow', 'visible');
-    };
-
-    var submitButton = helper.element({ tag:'button', type:'button', id:'edit_save', text:t('Save') });
-    actionsWrapper.appendChild(submitButton);
-    submitButton.addEventListener('click', function(e) {
-        var imageUrl = false;
-        if (document.getElementById('custom_image_input')) {
-            imageUrl = document.getElementById('custom_image_input').value;
-        }
-        var imageCaption = false;
-        if (document.getElementById('custom_text_input')) {
-            imageCaption = document.getElementById('custom_text_input').value;
-        }
-        else {
-            imageCaption = text;
-        }
-
-        var newCardContent = '';
-        if (imageUrl) {
-            newCardContent += '<a href="' + imageUrl + '" target="_blank"><img src="' + imageUrl + '" alt="Image not valid" style="max-width:100%; max-height:90%"></a><br><small>' + t('Click to view full size') + '</small>';
-        }
-        if (imageCaption) {
-            newCardContent += '<div class="text">' + imageCaption + '</div>';
-        }
-
-        document.getElementById(cardID).innerHTML = newCardContent;
-        closeWindow();
-    });
-
-    var closeButton = helper.element({ tag:'button', type:'button', id:'edit_close', text:t('Discard') });
-    actionsWrapper.appendChild(closeButton);
-    closeButton.addEventListener('click', closeWindow);
+    var playerDeck = this.getComponentInstance('playerDeck');
+    playerDeck.setParent(this.parentElement);
+    playerDeck.redraw(data);
 };
 
 BlanksGame.prototype.loadJudgeWaitingScreen = function(data) {
     var helper = new DOMHelper();
-
-    var wrapper = document.createElement('div');
-    wrapper.id = 'czar_wait_window';
-
-    var heading = document.createElement('h2');
-    heading.innerText = t('You\'re the card czar - wait for players to submit answer');
-    wrapper.appendChild(heading);
+    var wrapper = helper.element({ tag:'div', id:'czar_wait_window' });
+    helper.element({ tag:'h2', text:t('You\'re the card czar - wait for players to submit answer'), parent:wrapper });
 
     if (data.roundTime > 0) {
         var nowSeconds = Math.floor(new Date().getTime() / 1000);
@@ -795,49 +578,37 @@ BlanksGame.prototype.loadJudgeWaitingScreen = function(data) {
         setTimeout(tickTime, 1);
     }
 
-    var blackCardWrapper = document.createElement('div');
-    blackCardWrapper.id = 'question_card';
-    blackCardWrapper.innerHTML = data.questionCard.text;
-    wrapper.appendChild(blackCardWrapper);
+    // Black card wrapper
+    helper.element({ tag:'div', id:'question_card', html:data.questionCard.text, parent:wrapper });
 
     // Connected users display
-    var connectedUsers = document.createElement('div');
-    connectedUsers.id = 'connected_users';
-
-    this.components.playerList = new PlayerList(this, connectedUsers);
-    this.components.playerList.redraw();
+    var connectedUsers = helper.element({ tag:'div', id:'connected_users', parent:wrapper });
+    var playerList = this.getComponentInstance('playerList');
+    playerList.setParent(connectedUsers);
+    playerList.triggerRedraw(data);
     
-    wrapper.appendChild(connectedUsers);
     this.parentElement.appendChild(wrapper);
 };
 
 BlanksGame.prototype.loadJudgeScreen = function(data, playerIsJudge) {
-    // allCards
-    // currentJudge
+    // Delegate this to the round submissions component!
+    var helper = new DOMHelper();
+    var resultsWrapper = helper.element({ tag:'div', id:'player_submissions', parent:this.parentElement });
 
-    // Connected users display
-    var resultsWrapper = document.createElement('div');
-    resultsWrapper.id = 'player_submissions';
-
-    this.components.roundSubmissions = new RoundSubmissions(this, resultsWrapper);
-    this.components.roundSubmissions.redraw(data, playerIsJudge);
-    
-    this.parentElement.appendChild(resultsWrapper);
+    var roundSubmissions = this.getComponentInstance('roundSubmissions');
+    roundSubmissions.setParent(resultsWrapper);
+    roundSubmissions.redraw(data, playerIsJudge);
 };
 
 BlanksGame.prototype.loadResultsScreen = function(data) {
     var helper = new DOMHelper();
+    helper.element({ tag:'h2', text:t('Game finished'), parent:this.parentElement });
 
-    var heading = helper.element({ tag:'h2', text:t('Game finished') });
-    this.parentElement.appendChild(heading);
-
-    var leaderboard = helper.element({ tag:'div', id:'leaderboard' });
-
-    this.components.playerList = new PlayerList(this, leaderboard);
-    this.components.playerList.players = data.players;
-    this.components.playerList.winScreen();
-
-    this.parentElement.appendChild(leaderboard);
+    var leaderboard = helper.element({ tag:'div', id:'leaderboard', parent:this.parentElement });
+    var playerList = this.getComponentInstance('playerList');
+    playerList.setParent(leaderboard);
+    playerList.players = data.players;
+    playerList.winScreen();
 };
 
 BlanksGame.prototype.updateComponents = function(message) {

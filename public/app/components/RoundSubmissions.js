@@ -1,5 +1,5 @@
 /**
- * Round submissions component
+ * Round submissions (judging) component
  */
 function RoundSubmissions(game, parentElement) {
     Component.call(this, game);
@@ -11,8 +11,13 @@ function RoundSubmissions(game, parentElement) {
 RoundSubmissions.prototype = Object.create(Component.prototype);
 RoundSubmissions.prototype.constructor = RoundSubmissions;
 
+/**
+ * Generate judging display
+ * 
+ * @param {object} message
+ * @param {boolean} playerIsJudge
+ */
 RoundSubmissions.prototype.redraw = function (message, playerIsJudge) {
-    var output = "";
     var helper = new DOMHelper();
 
     var heading = document.createElement('h2');
@@ -36,9 +41,7 @@ RoundSubmissions.prototype.redraw = function (message, playerIsJudge) {
     var blackCard = helper.element({ tag:'div', id:'question_card', html:message.currentQuestion.text })
     this.parentElement.appendChild(blackCard);
 
-    var submissionsWrapper = document.createElement('div');
-    submissionsWrapper.id = 'player_card_submissions';
-
+    var submissionsWrapper = helper.element({ tag:'div', id:'player_card_submissions', parent:this.parentElement });
     var originalQuestionText = message.currentQuestion.text;
 
     // Randomise submission ordering - should this have been done server
@@ -60,57 +63,60 @@ RoundSubmissions.prototype.redraw = function (message, playerIsJudge) {
 
     for (var c = 0; c < randomisedCards.length; c++) {
         var playerCards = randomisedCards[c];
-        // var cardIndex = 0;
-        var questionText = originalQuestionText;
 
-        // var formElement = document.createElement('div');
-        // formElement.className = 'form-element';
+        var thisPlayerCard = this.game.player.selectedCards[0];
+        var isSelectable = true;
+
+        if (message.judgeMode == 1 && this.game.player.selectedCards[0] && playerCards[0].id == thisPlayerCard.id) {
+            isSelectable = false;
+        }
 
         var selectableWrapper = helper.element({
             tag: 'div',
             class: 'selectable-wrapper',
             id: 'submission_' + playerCards[0].id,
-            data:{
-                'card-index': playerCards[0].id
+            data: {
+                'card-index': playerCards[0].id,
+                'selectable': isSelectable
             }
         });
 
-        // while (questionText.indexOf('____') > -1) {
-        //     questionText = questionText.replace('____', '<strong>' + playerCards[cardIndex].text + '</strong>');
-        //     cardIndex++;
-        // }
         for (var d = 0; d < playerCards.length; d++) {
-
             var card = playerCards[d];
-            var cardElement = document.createElement('p');
-            cardElement.className = 'card';
-            // use the ID of first card as we only need it for identifying who has won the round
-            // cardElement.id = 'played_card' + playerCards[0].id;
-            // cardElement.dataset.id = playerCards[0].id;
-            cardElement.innerHTML = card.text;
-
-            selectableWrapper.appendChild(cardElement);
+            helper.element({ tag:'p', class:'card', html:card.text, parent:selectableWrapper });
         }
 
-        if (playerIsJudge) {
+        if (playerIsJudge && isSelectable) {
             selectableWrapper.addEventListener('click', this.highlightWinner);
         }
-
     
-        // formElement.appendChild(cardElement);
         submissionsWrapper.appendChild(selectableWrapper);
     }
 
-    this.parentElement.appendChild(submissionsWrapper);
-
     if (playerIsJudge) {
-        var pickWinnerButton = document.createElement('button');
-        pickWinnerButton.id = 'pick_winner';
-        pickWinnerButton.innerText = t('Confirm selection');
-        pickWinnerButton.addEventListener('click', this.pickWinner);
-        this.parentElement.appendChild(pickWinnerButton);
-        this.pickWinnerButton = pickWinnerButton;
+        this.pickWinnerButton = helper.element({ tag:'button', id:'pick_winner', text:t('Confirm selection'), parent:this.parentElement });
+        this.pickWinnerButton.addEventListener('click', this.pickWinner);
     }
+
+    if (this.game.clientIsGameHost) {
+        var forceNextRoundButton = helper.element({ tag:'button', id:'force_next_round', text:t('Force decision (player is AFK)'), parent:this.parentElement });
+        forceNextRoundButton.addEventListener('click', this.triggerNextRound);
+    }
+
+    // Draw player list
+    var playerListWrapper = helper.element({ tag:'div', id:'player_list', parent:this.parentElement });
+    var playerList = this.game.getComponentInstance('playerList');
+    playerList.setParent(playerListWrapper);
+    playerList.triggerRedraw(message);
+};
+
+/**
+ * Update the parent DOM element to attach RoundSubmissions to
+ * 
+ * @param {object} parentElement 
+ */
+RoundSubmissions.prototype.setParent = function(parentElement) {
+    this.parentElement = parentElement;
 };
 
 /**
@@ -120,23 +126,15 @@ RoundSubmissions.prototype.redraw = function (message, playerIsJudge) {
  */
 RoundSubmissions.prototype.highlightWinner = function (event) {
     var game = window.BlanksGameInstance;
-    var roundSubmissions = game.components.roundSubmissions;
+    var roundSubmissions = game.getComponentInstance('roundSubmissions');
 
     var allCards = document.querySelectorAll('#' + roundSubmissions.parentElement.id + ' .selectable-wrapper');
 
     for (i = 0; i < allCards.length; i++) {
-        if (allCards[i].className == 'selectable-wrapper active') {
-            allCards[i].className = "selectable-wrapper";
-        }
+        allCards[i].classList.remove('active');
     }
 
-    // Toggle active class
-    if (this.className.indexOf('active') > -1) {
-        this.className = "selectable-wrapper";
-    }
-    else {
-        this.className = "selectable-wrapper active";
-    }
+    this.classList.toggle('active');
 };
 
 /**
@@ -147,16 +145,30 @@ RoundSubmissions.prototype.highlightWinner = function (event) {
  */
 RoundSubmissions.prototype.pickWinner = function (event) {
     var game = window.BlanksGameInstance;
-    var roundSubmissions = game.components.roundSubmissions;
+    var roundSubmissions = game.getComponentInstance('roundSubmissions');
     var winningCard = document.querySelector('#' + roundSubmissions.parentElement.id + " .selectable-wrapper.active");
 
     if (!winningCard) {
         document.getElementById('pick_errors').innerHTML = '<p class="error">' + t('Please choose the winning card') + '</p>';
-        // game.components.messagePanel.showMessage(t('Please select a card'), 'error');
         return;
     }
 
     roundSubmissions.pickWinnerButton.disabled = true;
 
+    // Ensure the cards are no longer selectable
+    var selectableElements = document.querySelectorAll('#player_card_submissions .selectable-wrapper');
+    for (var s = 0; s < selectableElements.length; s++) {
+        selectableElements[s].removeEventListener('click', RoundSubmissions.prototype.highlightWinner);
+    }
+
     game.socket.send('{ "action": "winner_picked", "card": ' + winningCard.dataset.cardIndex + ' }');
+};
+
+/**
+ * In case that someone has gone AFK
+ */
+RoundSubmissions.prototype.triggerNextRound = function (event) {
+    var game = window.BlanksGameInstance;
+    game.socket.send('{ "action": "force_decision" }');
+    event.preventDefault();
 };

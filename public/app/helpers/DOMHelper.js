@@ -1,9 +1,6 @@
 /**
- * Helper functions to make creating interfaces using
- * javascript a bit friendlier and more consise
- */
-/**
- * Round submissions component
+ * Helper class to make creating interfaces using
+ * javascript a little bit more consise
  */
 function DOMHelper() {};
 
@@ -29,7 +26,7 @@ DOMHelper.prototype.element = function (data) {
     if (data.placeholder) element.placeholder = data.placeholder;
     
     if (data.data) {
-        Object.keys(data.data).forEach(function(key,index) {
+        Object.keys(data.data).forEach(function(key, index) {
             element.setAttribute('data-' + key, data.data[key]);
         });
     }
@@ -41,12 +38,28 @@ DOMHelper.prototype.element = function (data) {
     return element;
 };
 
-// Shortcuts
+// Common element shortcuts
+DOMHelper.prototype.div = function (data) {
+    data.tag = 'div';
+    return this.element(data);
+};
 
 DOMHelper.prototype.label = function (data) {
     data.tag = 'label';
     return this.element(data);
 };
+
+DOMHelper.prototype.textField = function(data) {
+    data.tag = 'input';
+    data.type = 'text';
+
+    if (data.label && data.parent) {
+        var label = this.label({ for: data.id, html:data.label });
+        data.parent.appendChild(label);
+    }
+
+    return this.element(data);
+}
 
 DOMHelper.prototype.dropdown = function (data) {
     data.tag = 'select';

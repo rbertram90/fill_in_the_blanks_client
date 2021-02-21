@@ -168,11 +168,17 @@ button.big,
 #player_hand .card {
     cursor: grab;
 }
-#player_hand .card:active {
+#player_hand .card:active, 
+#player_hand .card:focus {
     cursor: grabbing;
 }
 #player_hand .card:hover {
     transform: scale(1.1);
+}
+
+.selectable-wrapper[data-selectable="false"] .card {
+    background-color: #bbb;
+    border-color: #bbb;
 }
 
 button {
